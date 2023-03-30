@@ -1,0 +1,43 @@
+---
+title: "re_tidy"
+author: "Nils Tinner"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Setup, loading of data and library call for Tidyverse
+```{r setup}
+library(tidyverse)
+soil_organic_carbon <- read_csv("../data/1249534s1-s6.csv") #Reading in dataframe
+
+```
+
+Calculating the Response ratio for each experiment
+
+```{r}
+
+soil_organic_carbon |>
+  mutate(log_response_ratio = log(increased_CO2_mean/ambient_CO2_mean, base = exp(1))) |> #Calculating log response ration for each entry
+  group_by(Experiment) |> 
+  summarise(mean(log_response_ratio)) |>#Group by Experiment with the mean response ratio
+  knitr::kable(col.names = c("Experiment","Log_Response_Ratio"))
+
+
+```
+
+
+
+Calculating the Response ratio for duration of time
+
+
+```{r}
+soil_organic_carbon |>
+  mutate(log_response_ratio = log(increased_CO2_mean/ambient_CO2_mean, base = exp(1)),#Again first calculate response ratio
+  experiment_phase = case_when(time_years < 3 ~ factor("< 3"), #factors to keep order
+                                   time_years <= 6 & time_years >= 3 ~ factor("3-6"),
+                                   time_years > 6 ~ factor("> 6"))) |>
+  group_by(experiment_phase) |> 
+  summarise(mean(log_response_ratio)) |> #Again groupby, now for durations of experiment
+  knitr::kable(col.names = c("Duration","Log_Response_Ratio"))
+
+```
