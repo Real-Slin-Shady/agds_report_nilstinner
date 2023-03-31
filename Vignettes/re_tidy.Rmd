@@ -9,7 +9,6 @@ Setup, loading of data and library call for Tidyverse
 ```{r setup}
 library(tidyverse)
 soil_organic_carbon <- read_csv("../data/1249534s1-s6.csv") #Reading in dataframe
-
 ```
 
 Calculating the Response ratio for each experiment
@@ -21,7 +20,6 @@ soil_organic_carbon |>
   group_by(Experiment) |> 
   summarise(mean(log_response_ratio)) |>#Group by Experiment with the mean response ratio
   knitr::kable(col.names = c("Experiment","Log_Response_Ratio"))
-
 
 ```
 
