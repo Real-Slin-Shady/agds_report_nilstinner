@@ -150,5 +150,3 @@ ggplot(
 ```
 NA values are also added for completion, these values are plotted to the value 0. There seems to be a cluster around the end of June and the beginning of July. Wind speed is plotted as a color scale. Peak Ozone values seem to be at low Wind speeds which is expected. Also low ozone values are usually at high wind speeds which also makes sense. Again we could do a correlation to further explore this connection.
 
-
-This again 
