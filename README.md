@@ -1,9 +1,19 @@
-# Applied Geo-Data Science course FS23 University of Bern
+# Applied Geo-Data Science Course FS23 
+#University of Bern, GECO-Group
 
-Behold, for I present to you a masterpiece of data analysis and visualization, a GitHub project that will leave you in awe! This project is a tour de force in the realm of modeling, with a brilliant focus on data-driven insights that are both visually stunning and intellectually enlightening.
+This GitHub project is quite a delight,
+It models, visualizes, and gives insight.
+Using machine learning and stats galore,
+It uncovers patterns you've not seen before.
 
-Through the masterful application of cutting-edge machine learning techniques and sophisticated statistical analysis, this GitHub project takes raw data and transforms it into a rich tapestry of information, revealing hidden patterns and unlocking the secrets of complex systems. With its intuitive interface and user-friendly design, even those with limited technical expertise can effortlessly explore the data, uncovering previously undiscovered correlations and making groundbreaking discoveries.
+The data comes alive in vivid display,
+With visualizations that'll blow you away.
+From bar charts to networks, it's all so clear,
+You'll understand the data with nothing to fear.
 
-But that's not all! This project is also a feast for the eyes, with stunning visualizations that bring the data to life. From heat maps to scatter plots, from bar charts to network diagrams, every visual element is carefully crafted to convey complex information in a clear and concise manner. It's like watching a movie unfold before your very eyes, as the data tells its own story in a way that is both captivating and insightful.
+So if you want to level up your analysis game,
+This project's the one to give you fame.
+It's user-friendly and intuitive too,
+Making it easy for you to follow through.
 
-So if you're looking for a GitHub project that will take your data analysis and modeling to the next level, look no further than this awe-inspiring work of art. It will leave you breathless, spellbound, and hungry for more!
+Source: ChatGPT 3.5, 17.04.2023
