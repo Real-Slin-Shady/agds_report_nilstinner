@@ -29,7 +29,7 @@ if (any(installed_packages == FALSE)) {
 
 invisible(lapply(packages, library, character.only = TRUE))
 
-
+#Now: clean up the data
 airquality <- datasets::airquality
 airquality <- airquality |>
   mutate(across(c(Day, Month),~str_pad(.x,2, pad = "0"))) |> #Format dates to strings in same format
