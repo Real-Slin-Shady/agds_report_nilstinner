@@ -5,6 +5,9 @@ date: "`r Sys.Date()`"
 output: pdf_document
 
 ---
+#ADD CHAPTERS
+Introduction what doing
+Ask leading question to be answered
 First, lets do a set up and clean up the messy month and days columns.
 ```{r}
 # Package names
@@ -148,5 +151,5 @@ ggplot(
 
 
 ```
-NA values are also added for completion, these values are plotted to the value 0. There seems to be a cluster around the end of June and the beginning of July. Wind speed is plotted as a color scale. Peak Ozone values seem to be at low Wind speeds which is expected. Also low ozone values are usually at high wind speeds which also makes sense. Again we could do a correlation to further explore this connection.
+NA values are also added for completion, these values are plotted to the value zero. There seems to be a cluster around the end of June and the beginning of July. Wind speed is plotted as a color scale. Peak Ozone values seem to be at low Wind speeds which is expected. Also low ozone values are usually at high wind speeds which also makes sense. Again we could do a correlation to further explore this connection.
 
