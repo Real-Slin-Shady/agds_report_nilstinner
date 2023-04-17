@@ -15,7 +15,7 @@ A main focus will be the connection between Ozone and temperature and further fa
 
 # Initialisation
 First, lets do a set up and clean up the messy month and days columns from the standard data set. 
-```{r}
+```{r, message=FALSE}
 # Package names
 packages <- c("lubridate","tidyverse","ggridges","weathermetrics")
 
@@ -35,7 +35,7 @@ airquality <- airquality |>
   mutate(across(c(Day, Month),~str_pad(.x,2, pad = "0"))) |> #Format dates to strings in same format
   mutate(date = ymd(as.integer(paste(1973,Month,Day,sep = ""))), #Convert to actual dates
          Month = NULL, Day = NULL)|>
-  mutate(Temp = fahrenheit.to.celsius(Temp))
+  mutate(Temp = fahrenheit.to.celsius(Temp))#Convert to Degrees Celsius
 
 ```
 This results in tidy data. 
