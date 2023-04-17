@@ -5,10 +5,16 @@ date: "`r Sys.Date()`"
 output: pdf_document
 
 ---
-#ADD CHAPTERS
-Introduction what doing
-Ask leading question to be answered
-First, lets do a set up and clean up the messy month and days columns.
+# General Introduction
+
+## Report Content
+This report looks at the dataset airquality from the standard library of R. Data was collected in 1973  by Chambers et al. by the department of conservation and the National Weather Service. There are 6 variables: Ozone, solar radiation, wind speed, temperature and 2 columns containing the month and the day of the month separately.
+
+## Research Interests
+A main focus will be the connection between Ozone and temperature and further factors influencing Ozone concentration.
+
+# Initialisation
+First, lets do a set up and clean up the messy month and days columns from the standard data set. 
 ```{r}
 # Package names
 packages <- c("lubridate","tidyverse","ggridges","weathermetrics")
@@ -24,7 +30,6 @@ if (any(installed_packages == FALSE)) {
 invisible(lapply(packages, library, character.only = TRUE))
 
 
-#Also install weathermetrics
 airquality <- datasets::airquality
 airquality <- airquality |>
   mutate(across(c(Day, Month),~str_pad(.x,2, pad = "0"))) |> #Format dates to strings in same format
@@ -33,7 +38,10 @@ airquality <- airquality |>
   mutate(Temp = fahrenheit.to.celsius(Temp))
 
 ```
+This results in tidy data. 
+# Data Analysis and Visualisation
 
+## Ozone and Temperature Overview
 Then we take look at the connection between Ozone and Temperature. 
 
 ```{r}
@@ -47,6 +55,8 @@ ggplot(
   theme_classic()
 ```
 Na values are plotted as 0 so that their distribution is visible. It appears that more NA values are present at higher temperature data but not extremely high values. Furthermore, there seems to be a correlation between temperature and Ozone.
+
+## Air Temperature and Ozone Correlation
 
 To explore the correlation better lets plot a graph with this correlation:
 
@@ -65,6 +75,8 @@ ggplot(
 cor.test(airquality$Ozone, airquality$Temp, alternative = "two.sided",method = "pearson")
 ```
 Visible is the correlation and it appears that the temperature can explain Ozone quite well. The correlation test returns that the correlation is roughly 0.7 and is statistically significant with the method pearson and the two sided correlation test. Though we have eliminated all measurements containing NA as their measurement in Ozone which might induce a bias.
+
+## Temperature and Ozone Correlation by Month
 
 The correlation changes if we look at temperature patterns for each month separately:
 
@@ -87,6 +99,8 @@ ggplot(
 
 ```
 The correlation is steeper for peak summer months. But also temperature is higher in peak summer months. This might indicate a non linear correlation as with increasing temperature values for summer months the temperature seems to increase at a higher rate and so non linearly. It might also be due to other meteorological conditions during these months that change.
+
+## Mapping the Density of Temperature  and Ozone Values
 
 Just out of curiosity we map the temperature density vs the ozone density
 
@@ -114,6 +128,7 @@ ggplot(
 
 This again confirms our suspicion that the data might not correlate in a linear way since there seems to be almost no increase in Ozone concentration with rising temperatures at the beginning and then they start to increase in what might be a non linear way. Though I am not yet able to plot non linear regressions except thrugh a log transformation of the y axis which is not very attractive. We might learn that later in the course.
 
+## Statistical Evaluation of Ozone Values
 
 To explore further how Ozone varies over the months, lets look at a boxplot.
 
@@ -133,6 +148,8 @@ ggplot(
 
 ```
 The data is more spread out in the months of July and August. Although there are more outliers in the other months. Overall, the median of the Ozone concentration peaks in July and stays high throughout August. 
+
+## Timeseries Ozone values with Wind Speed
 
 To also add a time more detailed time dimension, lets look at the daily values:
 
