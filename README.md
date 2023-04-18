@@ -1,5 +1,5 @@
 # Applied Geo-Data Science Course FS23 
-## University of Bern, GECO-Group
+### University of Bern, GECO-Group
 
 This GitHub project is quite a delight,  
 It models, visualizes, and gives insight.  
