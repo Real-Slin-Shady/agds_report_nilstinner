@@ -1,5 +1,5 @@
 ---
-title: "re_ggplot"
+title: "Report Excercise \"ggplot\""
 author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: pdf_document
@@ -74,7 +74,7 @@ ggplot(
 
 cor.test(airquality$Ozone, airquality$Temp, alternative = "two.sided",method = "pearson")
 ```
-Visible is the correlation and it appears that the temperature can explain Ozone quite well. The correlation test returns that the correlation is roughly 0.7 and is statistically significant with the method pearson and the two sided correlation test. Though we have eliminated all measurements containing NA as their measurement in Ozone which might induce a bias.
+Visible is the correlation and it appears that the temperature can explain Ozone quite well. The correlation test returns that the correlation is roughly 0.7 and is statistically significant with the method pearson and the two sided correlation test. Though we have eliminated all measurements containing NA as their measurement in Ozone, which might induce a bias.
 
 ## Temperature and Ozone Correlation by Month
 
@@ -169,4 +169,5 @@ ggplot(
 
 ```
 NA values are also added for completion, these values are plotted to the value zero. There seems to be a cluster around the end of June and the beginning of July. Wind speed is plotted as a color scale. Peak Ozone values seem to be at low Wind speeds which is expected. Also low ozone values are usually at high wind speeds which also makes sense. Again we could do a correlation to further explore this connection.
+Interestingly, most NA values appear to be in the month of June. Again, we could explore this further in a more in depth analysis.
 
