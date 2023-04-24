@@ -42,15 +42,13 @@ all_predictors <-
          -GPP_NT_VUT_REF)|>
   colnames()
 
-r_squared <- NULL #Is there a more elegant way?
-models <-  list()
+models <-  list() #more elegant way?
 
 for (predictors in all_predictors) {
   temp <- as.formula(paste("GPP_NT_VUT_REF~", paste(predictors, collapse="+")))
   models[[predictors]]<- lm(temp,data = hh_fluxes)
-  
-  
 }
+
 r_squared <- purrr::map(models,~summary(.)$r.squared)
 
 
@@ -75,7 +73,9 @@ all_predictors <-
          -GPP_NT_VUT_REF)|>
   colnames()
 ACI_condition <- TRUE
-old_modelACI <- 0
+old_modelACI <- 10000000
+
+
 while (ACI_condition) {
   
 r_squared <- NULL #Is there a more elegant way?
@@ -93,13 +93,37 @@ r_squared <- purrr::map(models,~summary(.)$r.squared)
 predictor_rsquared <- r_squared[which.max(r_squared)]
 
 modelACI <- extractAIC(models[[which.max(r_squared)]])[2]
-all_predictors <- paste(all_predictors,names(predictor_rsquared),sep = " + ")
 
-print(all_predictors)
-if (modelACI < old_modelACI) {
+
+
+if (modelACI > old_modelACI) {
   ACI_condition <- FALSE
+  print("Terminating since lower ACI with new predictors")
+  
 }
+
+print("name:")
+print(names(predictor_rsquared))
+print("r-squared:")
+print(predictor_rsquared[[1]])
+print("ACI of these predictors")
+print(modelACI)
+cat("\n\n\n")
 old_modelACI <- modelACI
+
+
+all_predictors_separated <- strsplit(names(predictor_rsquared),split=' + ', fixed=TRUE)
+
+all_predictors <-
+  hh_fluxes|>
+  select(-siteid,
+         -TIMESTAMP,
+         -GPP_NT_VUT_REF)|>
+  colnames()
+
+all_predictors <- all_predictors[!(all_predictors %in% all_predictors_separated[[1]])]
+
+all_predictors <- paste(names(predictor_rsquared),all_predictors,sep = " + ")
 
 }
 
