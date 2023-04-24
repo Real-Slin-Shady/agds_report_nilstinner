@@ -4,27 +4,104 @@ author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+# Setup and Loading
+```{r, message=FALSE}
+# Package names
+packages <- c("lubridate","tidyverse","visdat","yardstick","purrr")
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}else{
+  print("All packages sucessfully installed")
+}
+
+invisible(lapply(packages, library, character.only = TRUE))
+
+hh_fluxes<- read_csv("../data/halfhourly_data.csv")
+
+vis_miss(
+  hh_fluxes,
+  cluster = FALSE, 
+  warn_large_data = FALSE
+  )
 ```
 
-## R Markdown
+# Evaluation of all Bivariate Models
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r}
+all_predictors <-
+  hh_fluxes|>
+  select(-siteid,
+         -TIMESTAMP,
+         -GPP_NT_VUT_REF)|>
+  colnames()
+
+r_squared <- NULL #Is there a more elegant way?
+models <-  list()
+
+for (predictors in all_predictors) {
+  temp <- as.formula(paste("GPP_NT_VUT_REF~", paste(predictors, collapse="+")))
+  models[[predictors]]<- lm(temp,data = hh_fluxes)
+  
+  
+}
+r_squared <- purrr::map(models,~summary(.)$r.squared)
+
+
+predictor_rsquared <- r_squared[which.max(r_squared)]
+modelACI <- extractAIC(models[[which.max(r_squared)]])[2]
+
+
+
+#Add: Visualisation and Discussion
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+```{r}
+
+all_predictors <-
+  hh_fluxes|>
+  select(-siteid,
+         -TIMESTAMP,
+         -GPP_NT_VUT_REF)|>
+  colnames()
+ACI_condition <- TRUE
+old_modelACI <- 0
+while (ACI_condition) {
+  
+r_squared <- NULL #Is there a more elegant way?
+models <-  list()
+
+for (predictors in all_predictors) {
+  temp <- as.formula(paste("GPP_NT_VUT_REF~", predictors))
+  models[[predictors]]<- lm(temp,data = hh_fluxes)
+  
+  
+}
+r_squared <- purrr::map(models,~summary(.)$r.squared)
+
+
+predictor_rsquared <- r_squared[which.max(r_squared)]
+
+modelACI <- extractAIC(models[[which.max(r_squared)]])[2]
+all_predictors <- paste(all_predictors,names(predictor_rsquared),sep = " + ")
+
+print(all_predictors)
+if (modelACI < old_modelACI) {
+  ACI_condition <- FALSE
+}
+old_modelACI <- modelACI
+
+}
+
+
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
