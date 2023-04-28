@@ -4,10 +4,17 @@ author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+
+#Introduction
+This script is an implementation for a stepwise forward regression. The data used is the half hourly fluxes dataset provided by the geocomputation group of the university of Bern.
+
 # Setup and Loading
+At first, we install and load the packages, then we load the dataset halfhourly fluxes. 
+At last, we visualize missing data. Multicolinearity is not checked for.
+
 ```{r, message=FALSE}
 # Package names
-packages <- c("lubridate","tidyverse","visdat","yardstick","purrr")
+packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2")
 
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -27,10 +34,11 @@ vis_miss(
   warn_large_data = FALSE
   )
 ```
+There appears that most data is missing in LW_IN_F_MDS. Also PPFD_IN has a lot of data missing. Overall 5.7% of the data is missing.
 
 # Evaluation of all Bivariate Models
-
-
+Now all bivariate models are created. To visualize them and how they compare, a plot is drawn for each one and the R-Square value is shown. This may take a long time to load, unsure why. The R-Squared is chosen because it is the main criterion for later evaluation of the best model for stepwise forward regression.
+Also all r-square values are printed.
 
 ```{r}
 all_predictors <-
@@ -41,102 +49,43 @@ all_predictors <-
   colnames()
 
 models <-  list() #more elegant way?
+plots <- list()
 
 for (predictor in all_predictors) {
-  temp <- as.formula(paste("GPP_NT_VUT_REF~", paste(predictor, collapse="+")))
-  models[[predictor]]<- lm(temp,data = hh_fluxes)
+  temp <- as.formula(paste("GPP_NT_VUT_REF~", paste(predictor, collapse="+")))#Weird structure for later
+  models[[predictor]]<- lm(temp,data = hh_fluxes) #same here
+
 }
 
 r_squared <- purrr::map(models,~summary(.)$r.squared)
-
+print(r_squared)
 
 predictor_rsquared <- r_squared[which.max(r_squared)]
 modelACI <- extractAIC(models[[which.max(r_squared)]])[2]
 
+r_squared <- unlist(r_squared)
 
+hh_fluxes_melt <-  hh_fluxes|>
+  select(-siteid,
+         -TIMESTAMP)|>
+ melt(id.vars='GPP_NT_VUT_REF')|>
+  mutate(rsquared = r_squared[match(variable, names(r_squared))])
 
-#Add: Visualisation and Discussion
+ggplot(hh_fluxes_melt) +
+  geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
+  geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
+  facet_wrap(~variable, scales="free_x") + 
+  geom_text(aes(label = paste("R^2 = ",round(rsquared,5))), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2)
+#why does this take forever?
 
 ```
+Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
 
 
+Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables beeing loaded to the global enviroment and to keep it tidy ;) There is a almost identical implementation saved as a R_file in the R subfolder called stepwise_forward_reg. Just if you want more insight.
+The return of the function is saved as the "models" variable.
 
-
-```{r}
-
-all_predictors <-
-  hh_fluxes|>
-  select(-siteid,
-         -TIMESTAMP,
-         -GPP_NT_VUT_REF)|>
-  colnames()
-ACI_condition <- TRUE
-old_modelACI <- Inf
-
-
-while (ACI_condition) {
-  
-r_squared <- NULL #Is there a more elegant way?
-models <-  list()
-
-for (predictors in all_predictors) {
-  temp <- as.formula(paste("GPP_NT_VUT_REF~", predictors))
-  models[[predictors]]<- lm(temp,data = hh_fluxes)
-}
-
-r_squared <- purrr::map(models,~summary(.)$r.squared)
-
-predictor_rsquared <- r_squared[which.max(r_squared)]
-
-modelACI <- extractAIC(models[[which.max(r_squared)]])[2]
-
-
-
-if (modelACI > old_modelACI) {
-  ACI_condition <- FALSE
-  print("Terminating since lower ACI with new predictors")
-  
-}
-
-print("name:")
-print(names(predictor_rsquared))
-print("r-squared:")
-print(predictor_rsquared[[1]])
-print("ACI of these predictors: ")
-print(modelACI)
-cat("\n\n\n")
-old_modelACI <- modelACI
-
-
-all_predictors_separated <- strsplit(names(predictor_rsquared),split=' + ', fixed=TRUE)
-
-all_predictors <-
-  hh_fluxes|>
-  select(-siteid,
-         -TIMESTAMP,
-         -GPP_NT_VUT_REF)|>
-  colnames()
-
-all_predictors <- all_predictors[!(all_predictors %in% all_predictors_separated[[1]])]
-
-all_predictors <- paste(names(predictor_rsquared),all_predictors,sep = " + ")
-}
-
-
-```
-
-
-# Evaluation of all Bivariate Models
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-
-
-
-
-#Raw Function for 
+#Raw Function for stepwise forward
 ```{r}
 Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
 unused_predictors <-
@@ -190,21 +139,10 @@ return(models)
 models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))
 ```
 
+For the evaluation and discussion also plots will be used:
 
 #Visualisation
 ```{r}
-  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F_MDS + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
-         aes(.fitted, .resid))+geom_point()+
-    stat_smooth(method="loess")+geom_hline(yintercept=0, col="red", linetype="dashed")+
-    xlab("Fitted values")+ylab("Residuals")+
-    ggtitle("Residual vs Fitted Plot")+theme_bw()
-  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F_MDS + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
-         aes(.hat, .stdresid))+geom_point(aes(size=.cooksd), na.rm=TRUE)+
-    stat_smooth(method="loess", na.rm=TRUE)+
-    xlab("Leverage")+ylab("Standardized Residuals")+
-    ggtitle("Residual vs Leverage Plot")+
-    scale_size_continuous("Cook's Distance", range=c(1,5))+
-    theme_bw()+theme(legend.position="bottom")
 
 
 R_squared <- purrr::map(models,~summary(.)$r.squared) |>
@@ -239,9 +177,28 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
   geom_text(aes(label=fct_rev(rowname)),position = position_dodge(width = 1),hjust=1, size = 3)+
   theme(axis.text.y = element_blank())
 
+  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F_MDS + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
+         aes(.fitted, .resid))+geom_point()+
+    stat_smooth(method="loess")+geom_hline(yintercept=0, col="red", linetype="dashed")+
+    xlab("Fitted values")+ylab("Residuals")+
+    ggtitle("Residual vs Fitted Plot")+theme_bw()
+  
+  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F_MDS + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
+         aes(.hat, .stdresid))+geom_point(aes(size=.cooksd), na.rm=TRUE)+
+    stat_smooth(method="loess", na.rm=TRUE)+
+    xlab("Leverage")+ylab("Standardized Residuals")+
+    ggtitle("Residual vs Leverage Plot")+
+    scale_size_continuous("Cook's Distance", range=c(1,5))+
+    theme_bw()+theme(legend.position="bottom")
+
+
+
 
 
   
 ```
+In the first and second plot and also in the output of the function it becomes evident that the R-squared value is increasing only in very small increments after the third predictor is added. Also the ACI only becomes ever so slightly smaller. Though it takes a lot of variables until the ACI starts to increase. 
 
+The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted values  have a positive residual while great vaues tend to be slightly negative. THis is not ideal since the distribution should show no visible deviation from the x= 0 lien and just be like a random point could.
+The Residual vs Leverage Plot shows that no single point crosses the Cook's Distance. Generally the points with more leverage seem to fit nicely into the model.
 
