@@ -41,101 +41,41 @@ Now all bivariate models are created. To visualize them and how they compare, a 
 Also all r-square values are printed.
 
 ```{r}
-all_predictors <-
-  hh_fluxes|>
-  select(-siteid,
-         -TIMESTAMP,
-         -GPP_NT_VUT_REF)|>
-  colnames()
 
-models <-  list() #more elegant way?
-plots <- list()
 
-for (predictor in all_predictors) {
-  temp <- as.formula(paste("GPP_NT_VUT_REF~", paste(predictor, collapse="+")))#Weird structure for later
-  models[[predictor]]<- lm(temp,data = hh_fluxes) #same here
 
-}
+source("../R/Bivariate_function.R")
+models_bivariate <- bivariate_regressions(hh_fluxes)
 
-r_squared <- purrr::map(models,~summary(.)$r.squared)
-print(r_squared)
-
-predictor_rsquared <- r_squared[which.max(r_squared)]
-modelACI <- extractAIC(models[[which.max(r_squared)]])[2]
-
+r_squared <- purrr::map(models_bivariate,~summary(.)$r.squared)
 r_squared <- unlist(r_squared)
 
-hh_fluxes_melt <-  hh_fluxes|>
+hh_fluxes|>
   select(-siteid,
          -TIMESTAMP)|>
  melt(id.vars='GPP_NT_VUT_REF')|>
-  mutate(rsquared = r_squared[match(variable, names(r_squared))])
-
-ggplot(hh_fluxes_melt) +
+  mutate(rsquared = r_squared[match(variable, names(r_squared))])|>
+ggplot() +
   geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
   geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
   facet_wrap(~variable, scales="free_x") + 
   geom_text(aes(label = paste("R^2 = ",round(rsquared,5))), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2)
 #why does this take forever?
 
+  #labs(subtitle = bquote( italic(R)^2 == .(format(r_squared, digits = 2)))), doesnt work
+
+
 ```
 Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
 
 
-Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables beeing loaded to the global enviroment and to keep it tidy ;) There is a almost identical implementation saved as a R_file in the R subfolder called stepwise_forward_reg. Just if you want more insight.
+Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables beeing loaded to the global enviroment and to keep it tidy ;) 
 The return of the function is saved as the "models" variable.
 
 #Raw Function for stepwise forward
 ```{r}
-Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
-unused_predictors <-
-  hh_fluxes|>
-  select(-all_of(toPredict),
-         -all_of(removeColumns))|>
-  colnames()#Save unused predictors to a  vector, initallly all...
 
-ACI_condition <- TRUE #Condition for loop
-old_modelACI <- Inf #Initial state of ACI value...
-Used_Predictors = NULL # Vector to later save the used predictor values
-models = list()
-
-while (ACI_condition) {
-models_temp <-  list() #overriding to save models for each run
-
-for (predictor in unused_predictors) {
-  local_predictors <- unlist(c(Used_Predictors,predictor))#Somehow makes a list, needed as a vector so unlist
-  local_predictors <- paste(local_predictors,collapse = " + ") #Now collapse vector
-  formula_temp <- as.formula(paste(toPredict,"~", local_predictors)) #temporary formula
-  models_temp[[local_predictors]]<- lm(formula_temp,data = hh_fluxes) #Save models to appripriate place
-  #The name is used for later referral
-}
-
-r_squared <- purrr::map(models_temp,~summary(.)$r.squared) #Here summary for each model+name is created
-predictor_rsquared <- r_squared[which.max(r_squared)] #Best one is chosen
-#remove used predictors from pool:
-Used_Predictors = strsplit(names(predictor_rsquared),split=' + ', fixed=TRUE) #separate the used predictors
-unused_predictors <- unused_predictors[!(unused_predictors %in% Used_Predictors)] 
-modelACI <- extractAIC(models_temp[[which.max(r_squared)]])[2]#Extraction of ACI
-
-if (modelACI > old_modelACI) { #Checking for improved ACI value...
-  ACI_condition <- FALSE
-  print("Terminating since lower ACI with new predictors")
-  
-}else{
-  old_modelACI <- modelACI #Replacing new one with old because check passed
-  models[[names(predictor_rsquared)]] <- models_temp[[which.max(r_squared)]]}#Saving Model for later visualization
-
-#UI-output
-print("name:")
-print(names(predictor_rsquared))
-print("r-squared:")
-print(predictor_rsquared[[1]])
-print("ACI of these predictors: ")
-print(modelACI)
-cat("\n\n\n")
-}
-return(models)
-}
+source("../R/Stepwise_forward_function.R")
 models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))
 ```
 
@@ -199,6 +139,7 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
 ```
 In the first and second plot and also in the output of the function it becomes evident that the R-squared value is increasing only in very small increments after the third predictor is added. Also the ACI only becomes ever so slightly smaller. Though it takes a lot of variables until the ACI starts to increase. 
 
-The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted values  have a positive residual while great vaues tend to be slightly negative. THis is not ideal since the distribution should show no visible deviation from the x= 0 lien and just be like a random point could.
+The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted valueshave a positive residual while great vaues tend to be slightly negative. THis is not ideal since the distribution should show no visible deviation from the x= 0 lien and just be like a random point could. This may be because negative values dont make sense and so the residuals must always be positive.
 The Residual vs Leverage Plot shows that no single point crosses the Cook's Distance. Generally the points with more leverage seem to fit nicely into the model.
 
+An interesting observation is when we compare to step one. There the highest R squares are
