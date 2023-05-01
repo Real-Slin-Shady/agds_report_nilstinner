@@ -58,6 +58,8 @@ daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-
 
 
 ```{r}
+
+
 # Data splitting
 set.seed(123)  # for reproducibility
 split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
@@ -125,5 +127,20 @@ KNN ok bias, low variance? nice tradeoff, more balanced?
 ##Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
 
 
+##state a hypothesis for how the R2and the MAE evaluated on the test and on the training set would change for  k approaching 1 and for  k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
+So for very small numbers of K i would expect a higher bias but less variance since the value would just resemble strongly the existing few datapoints.
+For a very large number of k I would expect the variance to be quite high since many neighbours start to influence the results. The Bias would probably be much smaller but it would be a sort of over-fitting probably.
 
 
+```{R}
+source("../R/KNN_daily_fluxes.R")
+for (k in c(1,5,10,50,100,200)) {
+  temp_KNN <- KNN_daily_fluxes(daily_fluxes,k,0.7)
+  print(eval_model(mod = temp_KNN$mod_knn, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test)) 
+}
+```
+
+##Is there an “optimal”  k in terms of model generalisability? Edit your code to determine an optimal k
+ .
+ Idea: Iterate through all to see what scores best R^2 for test case?
+ -> change code needed...

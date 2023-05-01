@@ -14,7 +14,7 @@ At last, we visualize missing data. Multicolinearity is not checked for.
 
 ```{r, message=FALSE}
 # Package names
-packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2")
+packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","ggpubr")
 
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -45,29 +45,34 @@ Also all r-square values are printed.
 
 
 source("../R/Bivariate_function.R")
-models_bivariate <- bivariate_regressions(hh_fluxes)
+models_bivariate <- bivariate_regressions(hh_fluxes,"GPP_NT_VUT_REF",c("siteid","TIMESTAMP","TA_F_MDS"))
 
 r_squared <- purrr::map(models_bivariate,~summary(.)$r.squared)
-r_squared <- unlist(r_squared)
-
-hh_fluxes|>
+r_squared <- data.frame(value = unlist(r_squared), variable = names(r_squared))
+tmp <- hh_fluxes|>
   select(-siteid,
-         -TIMESTAMP)|>
- melt(id.vars='GPP_NT_VUT_REF')|>
-  mutate(rsquared = r_squared[match(variable, names(r_squared))])|>
-ggplot() +
-  geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
-  geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
-  facet_wrap(~variable, scales="free_x") + 
-  geom_text(aes(label = paste("R^2 = ",round(rsquared,5))), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2)
-#why does this take forever?
+         -TIMESTAMP,
+         -TA_F_MDS)|>
+ melt(id.vars='GPP_NT_VUT_REF')
 
-  #labs(subtitle = bquote( italic(R)^2 == .(format(r_squared, digits = 2)))), doesnt work
+
+
 
 
 ```
-Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
 
+```{r}
+
+library(ggpubr)
+ggplot(data = tmp) +
+  geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
+  geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
+  geom_text(data = r_squared, aes(label = paste("R^2 = ", value)), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2) +
+  facet_wrap(~variable, scales="free_x")
+
+```
+Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
+We also removed unnecessary or double variables. For example TA_F_MDS is just a version of TA_F with value fill for missing data, we dont want these duplicates in there...
 
 Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables beeing loaded to the global enviroment and to keep it tidy ;) 
 The return of the function is saved as the "models" variable.
@@ -76,7 +81,7 @@ The return of the function is saved as the "models" variable.
 ```{r}
 
 source("../R/Stepwise_forward_function.R")
-models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))
+models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid","TA_F_MDS"))
 ```
 
 For the evaluation and discussion also plots will be used:
@@ -142,4 +147,4 @@ In the first and second plot and also in the output of the function it becomes e
 The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted valueshave a positive residual while great vaues tend to be slightly negative. THis is not ideal since the distribution should show no visible deviation from the x= 0 lien and just be like a random point could. This may be because negative values dont make sense and so the residuals must always be positive.
 The Residual vs Leverage Plot shows that no single point crosses the Cook's Distance. Generally the points with more leverage seem to fit nicely into the model.
 
-An interesting observation is when we compare to step one. There the highest R squares are
+An interesting observation is when we compare the resulti multivariate regression to the bivariate one. There the order of the best predictors does not correspond to the order in which the predictors are added to the multivariate model. For example the second highest R-Squared value is 0.43 with the predictor SW_IN_F. This predictor is then only added as 5th predictor to the multivariate model. So the ranking of r-squared values of bivariate models does not predict the order in which the predictors are added to the multivariate model.

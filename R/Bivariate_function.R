@@ -1,16 +1,15 @@
-bivariate_regressions<-function(tidydf){
+bivariate_regressions<-function(tidydf,toPredict,removeColumns){
   all_predictors <-
     tidydf|>
-    select(-siteid,
-           -TIMESTAMP,
-           -GPP_NT_VUT_REF)|>
+    select(-toPredict,
+           -all_of(removeColumns))|>
     colnames()
   
   models <-  list() #more elegant way?
   plots <- list()
   
   for (predictor in all_predictors) {
-    temp <- as.formula(paste("GPP_NT_VUT_REF~", paste(predictor, collapse="+")))#Weird structure for later
+    temp <- as.formula(paste(toPredict,"~", paste(predictor, collapse="+")))#Weird structure for later
     models[[predictor]]<- lm(temp,data = hh_fluxes) #same here
     
   }
