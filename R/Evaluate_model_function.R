@@ -9,6 +9,8 @@ eval_model <- function(mod, df_train, df_test){
     drop_na()
   df_test$fitted <- predict(mod, newdata = df_test)
   
+  
+  
   # get metrics tables
   metrics_train <- df_train |> 
     yardstick::metrics(GPP_NT_VUT_REF, fitted)
@@ -51,7 +53,18 @@ eval_model <- function(mod, df_train, df_test){
          title = "Test set") +
     theme_classic()
   
-  out <- cowplot::plot_grid(plot_1, plot_2)
+  
+  plot_3 <- ggplot(data = df_train, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
+    geom_point(alpha = 0.3) +
+    stat_smooth(method="loess", na.rm=TRUE)+
+    theme_classic()
+  
+  plot_4 <- ggplot(data = df_test, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
+    geom_point(alpha = 0.3) +
+    stat_smooth(method="loess", na.rm=TRUE)+
+    theme_classic()
+  
+  out <- cowplot::plot_grid(plot_1, plot_2, plot_3,plot_4)
   
   return(out)
 }

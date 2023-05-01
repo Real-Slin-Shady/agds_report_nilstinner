@@ -59,7 +59,7 @@ daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-
 
 ```{r}
 # Data splitting
-set.seed(1982)  # for reproducibility
+set.seed(123)  # for reproducibility
 split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
 daily_fluxes_train <- rsample::training(split)
 daily_fluxes_test <- rsample::testing(split)
@@ -94,19 +94,9 @@ mod_knn <- caret::train(
 
 ```
 
-
-
-```{r}
-# make model evaluation into a function to reuse code
-source("../R/Evaluate_model_function.R")
-
-
-```
-
-
-
 ```{r}
 # linear regression model
+source("../R/Evaluate_model_function.R")
 eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 
 ```
@@ -117,4 +107,23 @@ eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_t
 eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 
 ```
+
+##Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?
+Because regression actually predict what connection while nearest neighbour sot of rolling avg -> not quite as accurate for new data as for the one predicting, why not = 1?
+
+##Why is the does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
+Why not 1 is the question...
+
+##How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
+
+Lm no variance, high bias?
+
+KNN ok bias, low variance? nice tradeoff, more balanced?
+
+
+
+##Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
+
+
+
 
