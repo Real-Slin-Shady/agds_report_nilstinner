@@ -67,7 +67,7 @@ library(ggpubr)
 ggplot(data = tmp) +
   geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
   geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
-  geom_text(data = r_squared, aes(label = paste("R^2 = ", value)), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2) +
+  geom_text(data = r_squared, aes(label = paste("R^2 = ", round(value,4))), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2) +
   facet_wrap(~variable, scales="free_x")
 
 ```
@@ -122,14 +122,17 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
   geom_text(aes(label=fct_rev(rowname)),position = position_dodge(width = 1),hjust=1, size = 3)+
   theme(axis.text.y = element_blank())
 
-  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F_MDS + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
-         aes(.fitted, .resid))+geom_point()+
+
+  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`, aes(.fitted, .resid))+
+    geom_point()+
     stat_smooth(method="loess")+geom_hline(yintercept=0, col="red", linetype="dashed")+
     xlab("Fitted values")+ylab("Residuals")+
-    ggtitle("Residual vs Fitted Plot")+theme_bw()
+    ggtitle("Residual vs Fitted Plot")+
+    theme_bw()
   
-  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F_MDS + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
-         aes(.hat, .stdresid))+geom_point(aes(size=.cooksd), na.rm=TRUE)+
+  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
+         aes(.hat, .stdresid))+
+    geom_point(aes(size=.cooksd), na.rm=TRUE)+
     stat_smooth(method="loess", na.rm=TRUE)+
     xlab("Leverage")+ylab("Standardized Residuals")+
     ggtitle("Residual vs Leverage Plot")+

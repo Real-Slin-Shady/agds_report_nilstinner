@@ -55,92 +55,84 @@ daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-
 
 
 
-
-
-```{r}
-
-
-# Data splitting
-set.seed(123)  # for reproducibility
-split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
-daily_fluxes_train <- rsample::training(split)
-daily_fluxes_test <- rsample::testing(split)
-
-# Model and pre-processing formulation, use all variables but LW_IN_F
-pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
-                      data = daily_fluxes_train |> drop_na()) |> 
-  recipes::step_BoxCox(all_predictors()) |> 
-  recipes::step_center(all_numeric(), -all_outcomes()) |>
-  recipes::step_scale(all_numeric(), -all_outcomes())
-
-# Fit linear regression model
-mod_lm <- caret::train(
-  pp, 
-  data = daily_fluxes_train |> drop_na(), 
-  method = "lm",
-  trControl = caret::trainControl(method = "none"),
-  metric = "RMSE"
-)
-
-# Fit KNN model
-mod_knn <- caret::train(
-  pp, 
-  data = daily_fluxes_train |> drop_na(), 
-  method = "knn",
-  trControl = caret::trainControl(method = "none"),
-  tuneGrid = data.frame(k = 8),
-  metric = "RMSE"
-)
-
-
-
-```
-
 ```{r}
 # linear regression model
 source("../R/Evaluate_model_function.R")
-eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+source("../R/model_daily_fluxes.R")
+
+  temp_KNN <- model_daily_fluxes(daily_fluxes,"lm",0,0.7)
+  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot")) 
+
 
 ```
 
 
 ```{R}
 # KNN
-eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",8,0.7)
+  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot")) 
 
 ```
 
 ##Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?
-Because regression actually predict what connection while nearest neighbour sot of rolling avg -> not quite as accurate for new data as for the one predicting, why not = 1?
+Because regression predicts what connection there are between variables for all variables and so for both datasets behaves similarly because there is a lot of data in the training part that is all fitted with one line and so the regression line will miss also points of the training data, while nearest neighbour calculates a local regression so it fits training data very well (somehow maybe overfitting?) but may not fit new data as well.
 
-##Why is the does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
-Why not 1 is the question...
+##Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
+Because knn applies a linear regression locally over k points. Lm applies the regression over all points so it cannot predicto local variations.
 
 ##How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
 
-Lm no variance, high bias?
+Lm no variance and per definition no/very small bias.
 
-KNN ok bias, low variance? nice tradeoff, more balanced?
-
+KNN can have some bias and a balanced variance -> giving nicer trade-off. If neighbors not to few or too many.
 
 
 ##Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
+```{R}
+# KNN
+  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",8,0.7)
+  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot_all")) 
+  temp_KNN <- model_daily_fluxes(daily_fluxes,"lm",NULL,0.7)
+  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot_all")) 
+```
+Not much variation in the residuals over time, residuals were used to show the variations of observed and modeled GPP. If there is slight variation like a local increase of the residuals around January of 2008 or the decrease in 2010, this is visible in all models with all data.
 
-
-##state a hypothesis for how the R2and the MAE evaluated on the test and on the training set would change for  k approaching 1 and for  k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
-So for very small numbers of K i would expect a higher bias but less variance since the value would just resemble strongly the existing few datapoints.
-For a very large number of k I would expect the variance to be quite high since many neighbours start to influence the results. The Bias would probably be much smaller but it would be a sort of over-fitting probably.
+##state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change fork approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
+If k = 1, training data will be predicted with 0 error and perfect R2, but the evaluation will be very poor with a low R2 and a high MAE.
+If k approaches n, the training data will show a not optimal R2 and MAE because it is underfitted, and the test data will also not have a optimal fit since variation is not captured as desired.
 
 
 ```{R}
-source("../R/KNN_daily_fluxes.R")
+
 for (k in c(1,5,10,50,100,200)) {
-  temp_KNN <- KNN_daily_fluxes(daily_fluxes,k,0.7)
-  print(eval_model(mod = temp_KNN$mod_knn, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test)) 
+  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",k,0.7)
+  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot")) 
 }
 ```
+
 
 ##Is there an “optimal”  k in terms of model generalisability? Edit your code to determine an optimal k
  .
  Idea: Iterate through all to see what scores best R^2 for test case?
  -> change code needed...
+ 
+ 
+```{R}
+rsq_test <-  NULL
+values_k <- c(1,seq(5,to = 100, by = 5))
+for (k in values_k) {
+  
+  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",k,0.7)
+  rsq_test <- c(rsq_test, eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "r.squared")$rsq_test)
+  
+}
+
+rsq_test <- tibble(k = values_k,rsq_test = rsq_test)
+
+
+ggplot(data = rsq_test,aes(x = k, y = rsq_test))+
+  geom_point()+geom_line()+theme_classic()
+
+rsq_test |>
+  filter(rsq_test == max(rsq_test))
+```
