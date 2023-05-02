@@ -49,28 +49,21 @@ models_bivariate <- bivariate_regressions(hh_fluxes,"GPP_NT_VUT_REF",c("siteid",
 
 r_squared <- purrr::map(models_bivariate,~summary(.)$r.squared)
 r_squared <- data.frame(value = unlist(r_squared), variable = names(r_squared))
-tmp <- hh_fluxes|>
+
+hh_fluxes|>
   select(-siteid,
          -TIMESTAMP,
          -TA_F_MDS)|>
- melt(id.vars='GPP_NT_VUT_REF')
+ melt(id.vars='GPP_NT_VUT_REF') |>
 
-
-
-
-
-```
-
-```{r}
-
-library(ggpubr)
-ggplot(data = tmp) +
+ggplot() +
   geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
   geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
   geom_text(data = r_squared, aes(label = paste("R^2 = ", round(value,4))), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2) +
   facet_wrap(~variable, scales="free_x")
 
 ```
+
 Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
 We also removed unnecessary or double variables. For example TA_F_MDS is just a version of TA_F with value fill for missing data, we dont want these duplicates in there...
 
@@ -123,14 +116,14 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
   theme(axis.text.y = element_blank())
 
 
-  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`, aes(.fitted, .resid))+
+  ggplot(models[[length(models)]], aes(.fitted, .resid))+
     geom_point()+
     stat_smooth(method="loess")+geom_hline(yintercept=0, col="red", linetype="dashed")+
     xlab("Fitted values")+ylab("Residuals")+
     ggtitle("Residual vs Fitted Plot")+
     theme_bw()
   
-  ggplot(models$`PPFD_IN + LW_IN_F + VPD_F + TA_F + SW_IN_F + P_F + WS_F + CO2_F_MDS + PA_F`,
+  ggplot(models[[length(models)]],
          aes(.hat, .stdresid))+
     geom_point(aes(size=.cooksd), na.rm=TRUE)+
     stat_smooth(method="loess", na.rm=TRUE)+
@@ -145,9 +138,10 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
 
   
 ```
+
 In the first and second plot and also in the output of the function it becomes evident that the R-squared value is increasing only in very small increments after the third predictor is added. Also the ACI only becomes ever so slightly smaller. Though it takes a lot of variables until the ACI starts to increase. 
 
-The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted valueshave a positive residual while great vaues tend to be slightly negative. THis is not ideal since the distribution should show no visible deviation from the x= 0 lien and just be like a random point could. This may be because negative values dont make sense and so the residuals must always be positive.
+The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted valueshave a positive residual while great vaues tend to be slightly negative. This is not ideal since the distribution should show no visible deviation from the x= 0 line and just be like a random point could. This may be because negative values dont make sense and so the residuals must always be positive.
 The Residual vs Leverage Plot shows that no single point crosses the Cook's Distance. Generally the points with more leverage seem to fit nicely into the model.
 
 An interesting observation is when we compare the resulti multivariate regression to the bivariate one. There the order of the best predictors does not correspond to the order in which the predictors are added to the multivariate model. For example the second highest R-Squared value is 0.43 with the predictor SW_IN_F. This predictor is then only added as 5th predictor to the multivariate model. So the ranking of r-squared values of bivariate models does not predict the order in which the predictors are added to the multivariate model.
