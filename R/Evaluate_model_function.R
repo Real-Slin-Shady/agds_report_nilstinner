@@ -1,4 +1,4 @@
-eval_model <- function(mod, df_train, df_test,out){
+eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Training set",plot_name2 = "Test set"){
   
   # add predictions to the data frames
   df_train <- df_train |> 
@@ -41,7 +41,7 @@ eval_model <- function(mod, df_train, df_test,out){
     geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
     labs(subtitle = bquote( italic(R)^2 == .(format(rsq_train, digits = 2)) ~~
                               RMSE == .(format(rmse_train, digits = 3))),
-         title = "Training set") +
+         title = plot_name1) +
     theme_classic()
   
   plot_2 <- ggplot(data = df_test, aes(GPP_NT_VUT_REF, fitted)) +
@@ -50,7 +50,7 @@ eval_model <- function(mod, df_train, df_test,out){
     geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
     labs(subtitle = bquote( italic(R)^2 == .(format(rsq_test, digits = 2)) ~~
                               RMSE == .(format(rmse_test, digits = 3))),
-         title = "Test set") +
+         title = plot_name2) +
     theme_classic()
   
   
@@ -69,6 +69,8 @@ eval_model <- function(mod, df_train, df_test,out){
     return(cowplot::plot_grid(plot_1, plot_2))
   }else if(out == "r.squared"){
     return(list("rsq_train" = rsq_train,"rsq_test" = rsq_test))
+  }else if(out == "return_plots"){
+    return(list("plot_1" = plot_1,"plot_2" = plot_2))
   }
   return()
 }

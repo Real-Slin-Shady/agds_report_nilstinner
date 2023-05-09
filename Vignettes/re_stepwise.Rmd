@@ -26,7 +26,8 @@ if (any(installed_packages == FALSE)) {
 
 invisible(lapply(packages, library, character.only = TRUE))
 
-hh_fluxes<- read_csv("../data/halfhourly_data.csv")
+hh_fluxes<- read_csv("../data/halfhourly_data.csv") |>
+  select(-ends_with("MDS"),CO2_F_MDS) #Interpolated data is removed except CO2, there only interpolated data is aviable...
 
 vis_miss(
   hh_fluxes,
@@ -34,10 +35,10 @@ vis_miss(
   warn_large_data = FALSE
   )
 ```
-There appears that most data is missing in LW_IN_F_MDS. Also PPFD_IN has a lot of data missing. Overall 5.7% of the data is missing.
+It appears that most data is missing in PPFD_IN. Overall 3.4% of the data is missing.
 
 # Evaluation of all Bivariate Models
-Now all bivariate models are created. To visualize them and how they compare, a plot is drawn for each one and the R-Square value is shown. This may take a long time to load, unsure why. The R-Squared is chosen because it is the main criterion for later evaluation of the best model for stepwise forward regression.
+Now all bivariate models are created. To visualize them and how they compare, a plot is drawn for each one and the R-Square value is shown. This may take some time to load. The R-Squared is chosen because it is the main criterion for later evaluation of the best model for stepwise forward regression.
 Also all r-square values are printed.
 
 ```{r}
@@ -45,15 +46,14 @@ Also all r-square values are printed.
 
 
 source("../R/Bivariate_function.R")
-models_bivariate <- bivariate_regressions(hh_fluxes,"GPP_NT_VUT_REF",c("siteid","TIMESTAMP","TA_F_MDS"))
+r_squared <- bivariate_regressions(hh_fluxes,"GPP_NT_VUT_REF",c("siteid","TIMESTAMP")) |>
+  purrr::map(~summary(.)$r.squared)
 
-r_squared <- purrr::map(models_bivariate,~summary(.)$r.squared)
 r_squared <- data.frame(value = unlist(r_squared), variable = names(r_squared))
 
 hh_fluxes|>
   select(-siteid,
-         -TIMESTAMP,
-         -TA_F_MDS)|>
+         -TIMESTAMP)|>
  melt(id.vars='GPP_NT_VUT_REF') |>
 
 ggplot() +
@@ -65,17 +65,33 @@ ggplot() +
 ```
 
 Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
-We also removed unnecessary or double variables. For example TA_F_MDS is just a version of TA_F with value fill for missing data, we dont want these duplicates in there...
 
-Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables beeing loaded to the global enviroment and to keep it tidy ;) 
+
+Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables being loaded to the global environment and to keep it tidy ;) 
 The return of the function is saved as the "models" variable.
 
 #Raw Function for stepwise forward
 ```{r}
 
 source("../R/Stepwise_forward_function.R")
-models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid","TA_F_MDS"))
+models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))
+
+
 ```
+
+Now interestingly while debugging the code, I found that my code was not actually deteting predictors from the used predictors list. That was an issue on my side (as always) but it got me thinking: lets say we do not manage used and unused predictors. There are basically 2 possibilities: first we run out of predictors. There we can just say that the loop should only loop as many times as there are elements in the array. Another case is that it somehow takes tiwce the same predictors eventough that should not be possible?(the R^2 of a new predictor should always increase thats why it should always take one that is not yet used in the model since it increases the R^2) In that case the AIC will just be the same as before. We can assume that the AIC is never the same for two models since it is a precise number and so only is the same if the models is the same, so it added nothing (or here twice the same) and so we exit the loop. 
+This implementation lowers the complexity since we dont have to keep track as much of what we did use and what we didn't.
+The second implementation is called Stepwise_forward_function_2.R
+
+```{r}
+
+source("../R/Stepwise_forward_function_2.R")
+models_2 <- Stepwiseforward_tidy_2(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))
+
+```
+There is a very interesting pattern that emerges from these two versions of the formula. So because the first implementation only always test the remaining predictors and adds them based on whether the AIC decreased, in the end all predictors are added despite that in the last step the R^2 of the new model somehow decreases. I don't exactly know how that is possible but somehow it does.
+For the second model which always tests all possible combinations and then selects the best predictor based on R^2 there obviously is a better choice: just take one of the used predictors so that the R^2 will not decrease because its the same model. This then leads to that the AIC is the same as before and so the loop ends. In the end the first implementation is tecnically the correct implementation of the algorithm but there is an argument to be made that it makes more sense to take the highest R^2 performing model rather then strictly following this algorithm. For the evaluation the scritly correct function will be used.
+
 
 For the evaluation and discussion also plots will be used:
 

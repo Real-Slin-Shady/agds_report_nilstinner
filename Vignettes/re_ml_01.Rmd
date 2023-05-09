@@ -25,7 +25,7 @@ daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-
   dplyr::select(TIMESTAMP,
                 GPP_NT_VUT_REF,    # the target
                 ends_with("_QC"),  # quality control info
-                ends_with("_F"),   # includes all all meteorological covariates
+                ends_with("_F"),   # includes all all meteorological co-variates
                 -contains("JSB")   # weird useless variable
                 ) |>
 
@@ -48,6 +48,12 @@ daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-
 
   # drop QC variables (no longer needed)
   dplyr::select(-ends_with("_QC"))
+
+vis_miss(
+  daily_fluxes,
+  cluster = FALSE, 
+  warn_large_data = FALSE
+  )
 
 ```
 

@@ -24,17 +24,20 @@ Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
     r_squared <- purrr::map(models_temp,~summary(.)$r.squared) #Here summary for each model+name is created
     predictor_rsquared <- r_squared[which.max(r_squared)] #Best one is chosen
     #remove used predictors from pool:
-    Used_Predictors = strsplit(names(predictor_rsquared),split=' + ', fixed=TRUE) #separate the used predictors
-    unused_predictors <- unused_predictors[!(unused_predictors %in% Used_Predictors)] 
+    Used_Predictors = strsplit(names(predictor_rsquared[1]),split=' + ', fixed=TRUE) #separate the used predictors
+    unused_predictors <- unused_predictors[!unused_predictors %in% Used_Predictors[[1]]] 
     modelACI <- extractAIC(models_temp[[which.max(r_squared)]])[2]#Extraction of ACI
-    
-    if (modelACI > old_modelACI) { #Checking for improved ACI value...
+    if (modelACI >= old_modelACI) { #Checking for improved ACI value...
       ACI_condition <- FALSE
-      print("Terminating since lower ACI with new predictors")
-      
+      print("Terminate since AIC criterion")
     }else{
       old_modelACI <- modelACI #Replacing new one with old because check passed
       models[[names(predictor_rsquared)]] <- models_temp[[which.max(r_squared)]]}#Saving Model for later visualization
+    
+  if (identical(unused_predictors, character(0))) {
+    ACI_condition <- FALSE
+    print("Terminate since all predictors used")
+  }
     
     #UI-output
     print("name:")
