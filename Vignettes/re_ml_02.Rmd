@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r}
+```{r, message = F}
 
 # Package names
 packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret")
@@ -71,13 +71,10 @@ cowplot::plot_grid(miss_lae, miss_dav,
                    labels = c("Laegern",
                               "Davos"))
 
+rm(miss_lae,miss_dav)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
 set.seed(1982)  # for reproducibility
@@ -178,13 +175,10 @@ eval_model(mod_cv,daily_fluxes_train,daily_fluxes_test)
 daily_fluxes_dav_test <- daily_fluxes_test |>
   filter(id == "1")
 
+#overwriting variables smart -> refactor maybe?
 daily_fluxes_lae_test<- daily_fluxes_test |>
   filter(id == "2")
 
 eval_model(mod_cv,daily_fluxes_dav_test,daily_fluxes_lae_test,plot_name1 = "Test Davos",plot_name2 = "Test Laegern")
-
-
 ```
-
-
 

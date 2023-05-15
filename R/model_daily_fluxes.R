@@ -1,5 +1,5 @@
 
-model_daily_fluxes <- function(tidyDF,method_loc,kofKNN,split_prop){
+model_daily_fluxes <- function(tidyDF,method_loc,kofKNN = 0,split_prop){
 # Data splitting
 set.seed(1982)  # for reproducibility
 split <- rsample::initial_split(daily_fluxes, prop = split_prop, strata = "VPD_F")
