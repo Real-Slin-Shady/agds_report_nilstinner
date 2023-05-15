@@ -1,5 +1,5 @@
 ---
-title: "re_ml_02"
+title: "Report Machine Learning 2"
 author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
@@ -9,7 +9,7 @@ output: html_document
 ```{r, message = F}
 
 # Package names
-packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret")
+packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret","cowplot","stringr")
 
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -72,6 +72,7 @@ cowplot::plot_grid(miss_lae, miss_dav,
                    labels = c("Laegern",
                               "Davos"))
 
+set.seed(1982)
 rm(miss_lae,miss_dav)
 ```
 
@@ -107,6 +108,8 @@ mod_cv_lae <- caret::train(pp_lae,
                        tuneGrid = data.frame(k = c(2, 5, 10, 15, 20, 25, 30, 35, 40, 60, 100)),
                        metric = "MAE")
 
+print(paste("Optimal k of Davos:",mod_cv_dav$bestTune$k))
+print(paste("Optimal k of Laegern:",mod_cv_lae$bestTune$k))
 
 ```
 
@@ -165,7 +168,7 @@ set.seed(1982)  # for reproducibility
 daily_fluxes <- bind_rows(daily_fluxes_dav,daily_fluxes_lae,.id = "id")
 
 
-split <- rsample::initial_split(daily_fluxes, prop = 0.8, strata = "VPD_F")
+split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
 
 daily_fluxes_train <- rsample::training(split)
 daily_fluxes_test <- rsample::testing(split)
@@ -188,9 +191,52 @@ daily_fluxes_lae_test<- daily_fluxes_test |>
   filter(id == "2")
 
 eval_model(mod_cv,daily_fluxes_dav_test,daily_fluxes_lae_test,plot_name1 = "Test Davos",plot_name2 = "Test Laegern",out = "plot_all")
+
+
+
+#kp macht keinen sinn
+
+daily_fluxes_dav_test_plot <- daily_fluxes_dav_test |>
+  drop_na()
+  daily_fluxes_dav_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_dav_test_plot )
+  daily_fluxes_dav_test_plot <- daily_fluxes_dav_test_plot |>
+  mutate(yearmonth = format(TIMESTAMP, "%m/%Y"),
+         residuals = fitted-GPP_NT_VUT_REF)|>
+  group_by(yearmonth)|>
+  reframe(residuals = mean(residuals),
+            year = year(TIMESTAMP))|>
+    mutate(month = str_sub(yearmonth,1,2))
+
+
+ggplot(data = daily_fluxes_dav_test_plot, aes(x = month, y = residuals, group = year, color = factor(year))) +
+  geom_line() 
+
+daily_fluxes_dav_test_plot <- daily_fluxes_dav_test |>
+  drop_na()
+  daily_fluxes_dav_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_dav_test_plot )
+  
+daily_fluxes_dav_test_plot |>
+  mutate(month = month(TIMESTAMP),
+         residuals = fitted-GPP_NT_VUT_REF)|>
+  group_by(month)|>
+  reframe(residuals = mean(residuals))|>
+  ggplot(aes(x = month, y = residuals))+
+  geom_line()
+
+
+
+
+daily_fluxes_dav_test_plot <- melt(daily_fluxes_dav_test_plot, id.vars = "TIMESTAMP", value.name  = "GPP_NT_VUT_REF")
+
+
+  ggplot(daily_fluxes_dav_test_plot,aes(x = TIMESTAMP,y = GPP_NT_VUT_REF,col = Year))+
+    geom_line()
+
+
 ```
 
-The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefor is weighted heavier than laegern which introduces a bias towards mroe accurate predictions for davos.
+The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefor is weighted heavier than laegern which introduces a bias towards more accurate predictions for davos.
 
 
 #idea: deciduous vs broadleave: shouldt there be a winter bias? No? -> dont understand last part of questions...
+#Mabye bias? -> where model tends to?

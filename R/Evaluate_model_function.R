@@ -1,3 +1,10 @@
+# Function definitions -------------------
+ # Evaluates Model
+# Function that evaluates models based on the tow given datasets (usually train and test datasets). Further parameters are the output names for these two datasets.
+# Aditionally a plot containing also the time dimension of the data can be plotted if this is chosen. This is done with the out parameter, which can also return the plots
+# as a list or the R2 values from the evaluation.
+#Function may be overloaded but works for the excerises...
+
 eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Training set",plot_name2 = "Test set"){
   
   # add predictions to the data frames
@@ -25,6 +32,8 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
   rsq_train <- metrics_train |> 
     filter(.metric == "rsq") |> 
     pull(.estimate)
+
+
   
   rmse_test <- metrics_test |> 
     filter(.metric == "rmse") |> 
@@ -53,15 +62,21 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
          title = plot_name2) +
     theme_classic()
   
-  
+  #visualize the time dimension of the residuals
   plot_3 <- ggplot(data = df_train, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
     geom_point(alpha = 0.3) +
     stat_smooth(method="loess",formula = 'y ~ x', na.rm=TRUE)+
+    labs(x = "Date",y = "Residuals", subtitle = paste("Bias:", round(mean(df_train$fitted- df_train$GPP_NT_VUT_REF),4)))+
+    geom_hline(yintercept=0, linetype="dashed", 
+               color = "red", size=0.5)+
     theme_classic()
   
   plot_4 <- ggplot(data = df_test, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
     geom_point(alpha = 0.3) +
     stat_smooth(method="loess",formula = 'y ~ x', na.rm=TRUE)+
+    labs(x = "Date",y = "Residuals", subtitle = paste("Bias: " ,round(mean(df_test$fitted-df_test$GPP_NT_VUT_REF),4)))+ 
+    geom_hline(yintercept=0, linetype="dashed", 
+               color = "red", size=0.5)+
     theme_classic()
   
   
@@ -71,6 +86,6 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
     return(list("rsq_train" = rsq_train,"rsq_test" = rsq_test))
   }else if(out == "return_plots"){
     return(list("plot_1" = plot_1,"plot_2" = plot_2))
-  }
-  return()
+  }else if(out == "rmse"){
+    return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test))}
 }

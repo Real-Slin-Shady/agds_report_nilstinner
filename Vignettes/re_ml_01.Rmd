@@ -8,6 +8,7 @@ output: html_document
 first, we laod all data and we perform data cleaning and quality controls.
 
 ```{r,message = FALSE}
+set.seed(1982)
 # Package names
 packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret")
 
@@ -20,7 +21,7 @@ if (any(installed_packages == FALSE)) {
 }
 
 invisible(lapply(packages, library, character.only = TRUE)) #load packages
-rm(packages,installed_packages)
+# rm(packages,installed_packages)
 
 
 daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") |>  
@@ -71,13 +72,13 @@ First we plot the performance of the lm model:
 ```{r}
 # linear regression model
 source("../R/model_daily_fluxes.R") #the model function, to check parameters refer to the Function itself
+source("../R/split_dataset.R")
 source("../R/Evaluate_model_function.R") #This function takes many arguments, these will be elaborated step by step.
 
-
-  temp_lm<- model_daily_fluxes(daily_fluxes,method_loc = "lm",split_prop = 0.7) #returns the model with "lm" and a split proportion of 0.7, as well as the datasets of the splits. The return is a named list.
-  print(eval_model(mod = temp_lm$mod, df_train = temp_lm$daily_fluxes_train, df_test = temp_lm$daily_fluxes_test)) #The function creates an evaluation of the model based on the given datasets of training and evaluation. Naming can be specified with parameters as well as other outputs, these will be used later on.
+  split <- split_df(daily_fluxes,0.7)
+  temp_lm<- model_daily_fluxes(split$train,split$test,method_loc = "lm") #returns the model with "lm" and a split proportion of 0.7, as well as the datasets of the splits. The return is a named list.
+  print(eval_model(mod = temp_lm, df_train = split$train, df_test = split$test)) #The function creates an evaluation of the model based on the given datasets of training and evaluation. Naming can be specified with parameters as well as other outputs, these will be used later on.
   
-rm(temp_lm) #to keep workspace tidy
 
 ```
 
@@ -85,10 +86,10 @@ rm(temp_lm) #to keep workspace tidy
 Now we plot the performance of the KNN model.
 
 ```{R}
-# KNN
-  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",kofKNN = 8,split_prop = 0.7) #the same method is used, but with knn and a k of 8
-  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test)) 
-  rm(temp_KNN)
+
+  temp_KNN<- model_daily_fluxes(split$train,split$test,method_loc = "knn",kofKNN = 8)
+
+  print(eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test)) 
 
 ```
 
@@ -108,17 +109,19 @@ KNN can have some bias and a balanced variance -> giving nicer trade-off if neig
 ## Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
 ```{R}
   print("Model knn")
-  temp_KNN <- model_daily_fluxes(daily_fluxes,"lm",NULL,0.7)
-  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot_all")) #here we now also want additional plots which show the distribution over time so the output is set to "all plots"
+
+
+  temp_KNN<- model_daily_fluxes(split$train,split$test,method_loc = "knn",kofKNN = 8)
+
+  print(eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test,out = "plot_all")) 
   
 print("Model lm")
-  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",8,0.7)
-  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot_all")) 
+  temp_lm<- model_daily_fluxes(split$train,split$test,method_loc = "lm") #returns the model with "lm" and a split proportion of 0.7, as well as the datasets of the splits. The return is a named list.
+  print(eval_model(mod = temp_lm, df_train = split$train, df_test = split$test,out = "plot_all"))
 
-  rm(temp_KNN)
 ```
 
-Not much variation in the residuals (fitted-actual value, on the y axis) over time, residuals were used to show the variations of observed and modeled GPP. 
+Not much variation in the residuals over time, residuals were used to show the variations of observed and modeled GPP. 
 If there is slight variation like a local increase of the residuals around January of 2008 or the decrease in 2010, this is visible in all models with all data.
 
 ## state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
@@ -129,42 +132,41 @@ If k approaches n, the training data will show a not optimal R2 and MAE because 
 ```{R}
 
 for (k in c(1,10,50,200)) {
-  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",k,0.7)
-  print(eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "plot")) 
+  temp_KNN <- model_daily_fluxes(split$train,split$test,method_loc = "knn",kofKNN = k)
+  print(eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "plot")) 
 }
-rm(k)
 ```
 The aforementioned things are visible in these plots: with K = 1 the training dataset performes very well but the test dataset performs miserable. 
 As of for the other extreme, the model also appreas to slightly decrease the R2 value as well as increase the MAE when the k becomes extremely high. This is due to underfitting with to many neighbors chosen.
 
 
 ## Is there an “optimal”  k in terms of model generalisability? Edit your code to determine an optimal k
-For the "optimal" i would argue based on my current knowledge that we want the best performance possible in the R2 in the test dataset.
+For the "optimal" i would argue based on my current knowledge that we want the best performance possible in the RMSE in the test dataset.
 We can loop over several possibilities of k and then do an evaluation:
 
  
 ```{R}
-rsq_test <-  NULL #Vector to save the R2 values
+rmse_test <-  NULL #Vector to save the R2 values
 values_k <- c(1,seq(5,to = 100, by = 5),125,150) #values to be tested
 for (k in values_k) {
   
-  temp_KNN <- model_daily_fluxes(daily_fluxes,"knn",k,0.7) #create the model
-  rsq_test <- c(rsq_test, eval_model(mod = temp_KNN$mod, df_train = temp_KNN$daily_fluxes_train, df_test = temp_KNN$daily_fluxes_test, out = "r.squared")$rsq_test)
+    temp_KNN <- model_daily_fluxes(split$train,split$test,method_loc = "knn",kofKNN = k)
+  rmse_test <- c(rmse_test, eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "rmse")$rmse_test)
   #a now output is desired: the R2 values. Therefore the model itself returns the R2 value of the test and training datasets as a list. There, only the test R2 is used.
   
 } #This takes some time to load since a lot of models are evaluated.
 
-rsq_test <- tibble(k = values_k,rsq_test = rsq_test) #save values as a nice tibble
+rmse_test <- tibble(k = values_k,rmse_test = rmse_test) #save values as a nice tibble
 
 
-ggplot(data = rsq_test,aes(x = k, y = rsq_test))+
+ggplot(data = rmse_test,aes(x = k, y = rmse_test))+
   geom_point()+geom_line()+theme_classic()+
-  labs(x = "k of KNN",y = "R^2")#plot the data
+  labs(x = "k of KNN",y = "RMSE")#plot the data
 
-rsq_test |>
-  filter(rsq_test == max(rsq_test)) #print the best performing model.
-rm(temp_KNN,rsq_test,values_k,k)
+rmse_test |>
+  filter(rmse_test == min(rmse_test)) #print the best performing model.
+rm(temp_KNN,rmse_test,values_k,k)
 
 ```
-As predicted in our less elaborate approach, the R2 value of the test data increases at first (with some ranom fluctuations) until k = 60 when it starts to decrease again. Therefor k = 60 is our "optimal" k.
+As predicted in our less elaborate approach, the RMSE value of the test data increases at first (with some ranom fluctuations) until k = 60 when it starts to decrease again. Therefor k = 60 is our "optimal" k.
 Though this is not optimal. We should never use the test data to optimize the model. In a optimal case we would set aside another 20-30% of the data to perform final model performance.
