@@ -4,6 +4,7 @@ author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+# Setup and Data cleaning
 
 ```{r, message = F}
 
@@ -21,13 +22,13 @@ if (any(installed_packages == FALSE)) {
 
 invisible(lapply(packages, library, character.only = TRUE))
 
-clean_up <- function(df){
+clean_up <- function(df){#Define function for cleanup since duplicated code is smelly
   df <- df |>
   # select only the variables we are interested in
   dplyr::select(TIMESTAMP,
-                GPP_NT_VUT_REF,    # the target
-                SW_IN_F,  # quality control info
-                VPD_F,   # includes all all meteorological co-variates
+                GPP_NT_VUT_REF,    
+                SW_IN_F,  
+                VPD_F,   
                 TA_F,
                 ends_with("_QC")# weird useless variable
                 ) |>
@@ -48,7 +49,7 @@ clean_up <- function(df){
   # drop QC variables (no longer needed)
   dplyr::select(-ends_with("_QC")) 
     return(df)
-}
+} 
 daily_fluxes_dav <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") |>
 clean_up()
 
@@ -74,11 +75,11 @@ cowplot::plot_grid(miss_lae, miss_dav,
 rm(miss_lae,miss_dav)
 ```
 
-
+The loading process is almost the same as in re_ml_1 except that Longwave radiation is not kept since there are just too many missing data values that impact our models in davos. Now we have mostly non missing data for the evaluation.
 
 ```{r}
 set.seed(1982)  # for reproducibility
-split <- rsample::initial_split(daily_fluxes_lae, prop = 0.8, strata = "VPD_F")
+split <- rsample::initial_split(daily_fluxes_lae, prop = 0.8, strata = "VPD_F") 
 daily_fluxes_lae_train <- rsample::training(split)
 daily_fluxes_lae_test <- rsample::testing(split)
 
@@ -87,8 +88,8 @@ daily_fluxes_dav_train <- rsample::training(split)
 daily_fluxes_dav_test <- rsample::testing(split)
 
 # Model and pre-processing formulation, use all variables but LW_IN_F
-source("../R/Recipe_GPP.R")
-pp_dav <- recipe_GPP(daily_fluxes_dav_train)
+source("../R/Recipe_GPP.R")#get recipie function based on the splitted data.
+pp_dav <- recipe_GPP(daily_fluxes_dav_train) 
 pp_lae <- recipe_GPP(daily_fluxes_lae_train)
 
 
@@ -109,10 +110,11 @@ mod_cv_lae <- caret::train(pp_lae,
 
 ```
 
-
+# Within-Site Predictions and Across-Site Predictions
 
 ```{r}
 source("../R/Evaluate_model_function.R")
+#The evaluate function is quite flexible. Also the names of the plots and the return as plots instead of a print can be specified.
 plots_1 <- eval_model(mod_cv_dav,daily_fluxes_dav_train,daily_fluxes_dav_test,plot_name1 = "Training set Davos",plot_name2 = "Test set Davos",out="return_plots")
 plots_2 <- eval_model(mod_cv_dav,daily_fluxes_dav_test,daily_fluxes_lae_test, plot_name1 = "Test set Davos",plot_name2 = "Test set Laegern",out="return_plots")
 
@@ -127,10 +129,10 @@ title_top <- ggdraw() +
     fontface = 'bold',
     x = 0,
     hjust = 0)+
-  theme(plot.margin = margin(0, 0, 0, 7))
+  theme(plot.margin = margin(0, 0, 0, 7)) #Title 1
 
 top_row <- cowplot::plot_grid(plots_1[[1]], plots_1[[2]],plots_2[[2]],
-                   nrow = 1)
+                   nrow = 1) #first row of plots
 
 title_bottom <- ggdraw() + 
   draw_label(
@@ -138,19 +140,25 @@ title_bottom <- ggdraw() +
     fontface = 'bold',
     x = 0,
     hjust = 0)+
-  theme(plot.margin = margin(0, 0, 0, 7))
+  theme(plot.margin = margin(0, 0, 0, 7)) #Title 2
 
 bootom_row <- cowplot::plot_grid(plots_3[[1]], plots_3[[2]],plots_4[[2]],
-                   nrow = 1)
+                   nrow = 1) #second wor of plots.
 
 plot_grid(
   title_top, top_row,title_bottom,bootom_row,
   ncol = 1,
-  rel_heights = c(0.1, 1))
+  rel_heights = c(0.1, 1)) #finally we have the combined plot
 
 rm(title_top,title_bottom,top_row,bootom_row,plots_1,plots_2,plots_3,plots_4) #Cleanup after this mess of a plot
 
 ```
+
+# Interpreation
+The models both perform much better on the test for the data of the site that they were trained for. This is roughly expected since the situation in site may vary a lot in example tree species and climate. This will be discussed later in more dept.
+
+
+# Single Model
 
 ```{r}
 set.seed(1982)  # for reproducibility
@@ -179,6 +187,10 @@ daily_fluxes_dav_test <- daily_fluxes_test |>
 daily_fluxes_lae_test<- daily_fluxes_test |>
   filter(id == "2")
 
-eval_model(mod_cv,daily_fluxes_dav_test,daily_fluxes_lae_test,plot_name1 = "Test Davos",plot_name2 = "Test Laegern")
+eval_model(mod_cv,daily_fluxes_dav_test,daily_fluxes_lae_test,plot_name1 = "Test Davos",plot_name2 = "Test Laegern",out = "plot_all")
 ```
 
+The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefor is weighted heavier than laegern which introduces a bias towards mroe accurate predictions for davos.
+
+
+#idea: deciduous vs broadleave: shouldt there be a winter bias? No? -> dont understand last part of questions...

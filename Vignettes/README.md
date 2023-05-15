@@ -11,6 +11,7 @@ Renv:init()? for loading? Installing packages?
 What about copied code from script?
 How to deal with function description?
 tidy with rm() variables?
+setseed?
 
 
 Not read: Added material regression
