@@ -6,7 +6,7 @@ output: html_document
 ---
 
 #Introduction
-This script is an implementation for a stepwise forward regression. The data used is the half hourly fluxes dataset provided by the geocomputation group of the university of Bern.
+This script is an implementation for a stepwise forward regression. The data used is the half hourly fluxes dataset provided by the geocomputation group of the university of Bern and contains data from the FLUXNET dataset.
 
 # Setup and Loading
 At first, we install and load the packages, then we load the dataset halfhourly fluxes. 
@@ -27,29 +27,28 @@ if (any(installed_packages == FALSE)) {
 invisible(lapply(packages, library, character.only = TRUE))
 
 hh_fluxes<- read_csv("../data/halfhourly_data.csv") |>
-  select(-ends_with("MDS"),CO2_F_MDS) #Interpolated data is removed except CO2, there only interpolated data is aviable...
+  select(-ends_with("MDS"),CO2_F_MDS) #Interpolated data is removed except CO2, there only interpolated data is viable...
 
 vis_miss(
   hh_fluxes,
   cluster = FALSE, 
   warn_large_data = FALSE
-  )
+  ) #Visualize
+rm(installed_packages,packages) #declutter
 ```
 It appears that most data is missing in PPFD_IN. Overall 3.4% of the data is missing.
+Data containing MDS data, which is interpolated data, is removed. Only CO2 is kept, because there is no raw form of the data.
 
 # Evaluation of all Bivariate Models
-Now all bivariate models are created. To visualize them and how they compare, a plot is drawn for each one and the R-Square value is shown. This may take some time to load. The R-Squared is chosen because it is the main criterion for later evaluation of the best model for stepwise forward regression.
-Also all r-square values are printed.
+Now all bivariate models are created. The main goal is to predict GPP, gross primary production, which will be our "target variable". To visualize different predictors and how they compare, a plot is drawn for each one and the R-Square value is shown. This may take some time to load. The R-Squared is chosen because it is the main criterion for later evaluation of the best model for stepwise forward regression.
+Also, all r-square values are printed.
 
 ```{r}
-
-
-
 source("../R/Bivariate_function.R")
-r_squared <- bivariate_regressions(hh_fluxes,"GPP_NT_VUT_REF",c("siteid","TIMESTAMP")) |>
+r_squared <- bivariate_regressions(hh_fluxes,"GPP_NT_VUT_REF",c("siteid","TIMESTAMP")) |> #bivariate function is called
   purrr::map(~summary(.)$r.squared)
 
-r_squared <- data.frame(value = unlist(r_squared), variable = names(r_squared))
+r_squared <- data.frame(value = unlist(r_squared), variable = names(r_squared)) #needed as vector, not a list...
 
 hh_fluxes|>
   select(-siteid,
@@ -58,7 +57,7 @@ hh_fluxes|>
 
 ggplot() +
   geom_jitter(aes(value,GPP_NT_VUT_REF, colour=variable),size = 0.1, na.rm=TRUE) + 
-  geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE) +
+  geom_smooth(aes(value,GPP_NT_VUT_REF), colour="black", method=lm, se=FALSE, na.rm=TRUE,formula = 'y ~ x') +
   geom_text(data = r_squared, aes(label = paste("R^2 = ", round(value,4))), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 1.5, nudge_x = -2, nudge_y = -2) +
   facet_wrap(~variable, scales="free_x")
 
@@ -66,20 +65,21 @@ ggplot() +
 
 Visible is the best regression: PPFD_IN with a correlation of 0.452. Therefore PPFD_IN will be used as the first predictor in the the algorithm later.
 
-
-Now comes the implementation of the Algorithm itself. It is packed to a function to avoid too many variables being loaded to the global environment and to keep it tidy ;) 
-The return of the function is saved as the "models" variable.
+Now comes the implementation of the algorithm itself. It is packed to a function to avoid too many variables being loaded to the global environment and to keep it tidy ;) 
+The return of the function is saved as the "models" variable. This is a list of all models of the stepwise forward regression.
 
 #Raw Function for stepwise forward
 ```{r}
 
 source("../R/Stepwise_forward_function.R")
-models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))
+models <- Stepwiseforward_tidy(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","siteid"))# The function should predict the target GPP and take all variables as predictors except TIMESTAMP and siteid since these are deemed as non predicting variables.
 
 
 ```
 
-Now interestingly while debugging the code, I found that my code was not actually deteting predictors from the used predictors list. That was an issue on my side (as always) but it got me thinking: lets say we do not manage used and unused predictors. There are basically 2 possibilities: first we run out of predictors. There we can just say that the loop should only loop as many times as there are elements in the array. Another case is that it somehow takes tiwce the same predictors eventough that should not be possible?(the R^2 of a new predictor should always increase thats why it should always take one that is not yet used in the model since it increases the R^2) In that case the AIC will just be the same as before. We can assume that the AIC is never the same for two models since it is a precise number and so only is the same if the models is the same, so it added nothing (or here twice the same) and so we exit the loop. 
+We see that first the "Photosynthetic photon flux density" is chosen (PPFD_IN). This makes sense since these are the very photons that are used for photosynthesis and thus GPP. As teh second predictor, Longwave infrared radiation is chosen, which is a bit suprising since longwave infrared radiation is not expected as a extremly good predictor for photosynthesis activity. This might be because there might be colineartiy between the two variables which was not checked for. I'm not going to discuss every predictor since these are also kind of out of my area of specialisation and would require a indept analysis for each one to discuss the effect on GPP.
+
+Now interestingly while debugging the code, I found that my code was not actually deleting predictors from the used predictors list. That was an issue on my side (as always) but it got me thinking: lets say we do not manage used and unused predictors. There are basically 2 possibilities: first we run out of predictors. There we can just say that the loop should only loop as many times as there are elements in the array. Another case is that it somehow takes twice the same predictors eventough that should not be possible?(the R^2 of a new predictor should always increase that's why it should always take one that is not yet used in the model since it increases the R^2) In that case the AIC will just be the same as before. We can assume that the AIC is never the same for two models since it is a precise number and so only is the same if the models is the same, so it added nothing (or here twice the same) and so we exit the loop. 
 This implementation lowers the complexity since we dont have to keep track as much of what we did use and what we didn't.
 The second implementation is called Stepwise_forward_function_2.R
 
@@ -90,7 +90,7 @@ models_2 <- Stepwiseforward_tidy_2(hh_fluxes,"GPP_NT_VUT_REF",c("TIMESTAMP","sit
 
 ```
 There is a very interesting pattern that emerges from these two versions of the formula. So because the first implementation only always test the remaining predictors and adds them based on whether the AIC decreased, in the end all predictors are added despite that in the last step the R^2 of the new model somehow decreases. I don't exactly know how that is possible but somehow it does.
-For the second model which always tests all possible combinations and then selects the best predictor based on R^2 there obviously is a better choice: just take one of the used predictors so that the R^2 will not decrease because its the same model. This then leads to that the AIC is the same as before and so the loop ends. In the end the first implementation is tecnically the correct implementation of the algorithm but there is an argument to be made that it makes more sense to take the highest R^2 performing model rather then strictly following this algorithm. For the evaluation the scritly correct function will be used.
+For the second model which always tests all possible combinations and then selects the best predictor based on R^2 there obviously is a better choice: just take one of the used predictors so that the R^2 will not decrease because its the same model. This then leads to that the AIC is the same as before and so the loop ends. In the end the first implementation is technically the correct implementation of the algorithm but there is an argument to be made that it makes more sense to take the highest R^2 performing model rather then strictly following this algorithm. For the evaluation the strictly correct function will be used.
 
 
 For the evaluation and discussion also plots will be used:
@@ -111,7 +111,7 @@ ggplot(data = R_squared ,aes(y = fct_rev(rowname), x = R)) +
   scale_x_continuous() +
   labs(y = "Predictors", x = "R-Squared")+
   theme_classic(base_size = 7)+
-  geom_text(aes(label=fct_rev(rowname)),position = position_dodge(width = 1),hjust=1, size = 3)+
+  geom_text(aes(label=fct_rev(rowname)),position = position_dodge(width = 1),hjust=1, size = 2.5)+
   theme(axis.text.y = element_blank())
 
 
@@ -128,13 +128,13 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
   scale_x_continuous() +
   labs(y = "Predictors", x = "ACI-Value")+
   theme_classic(base_size = 7)+
-  geom_text(aes(label=fct_rev(rowname)),position = position_dodge(width = 1),hjust=1, size = 3)+
+  geom_text(aes(label=fct_rev(rowname)),position = position_dodge(width = 1),hjust=1, size = 2.5)+
   theme(axis.text.y = element_blank())
 
 
   ggplot(models[[length(models)]], aes(.fitted, .resid))+
     geom_point()+
-    stat_smooth(method="loess")+geom_hline(yintercept=0, col="red", linetype="dashed")+
+    stat_smooth(method="loess", formula = 'y ~ x')+geom_hline(yintercept=0, col="red", linetype="dashed")+
     xlab("Fitted values")+ylab("Residuals")+
     ggtitle("Residual vs Fitted Plot")+
     theme_bw()
@@ -142,7 +142,7 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
   ggplot(models[[length(models)]],
          aes(.hat, .stdresid))+
     geom_point(aes(size=.cooksd), na.rm=TRUE)+
-    stat_smooth(method="loess", na.rm=TRUE)+
+    stat_smooth(method="loess", na.rm=TRUE, formula = 'y ~ x')+
     xlab("Leverage")+ylab("Standardized Residuals")+
     ggtitle("Residual vs Leverage Plot")+
     scale_size_continuous("Cook's Distance", range=c(1,5))+
@@ -155,9 +155,10 @@ ggplot(data = ACI ,aes(y = fct_rev(rowname), x = R)) +
   
 ```
 
-In the first and second plot and also in the output of the function it becomes evident that the R-squared value is increasing only in very small increments after the third predictor is added. Also the ACI only becomes ever so slightly smaller. Though it takes a lot of variables until the ACI starts to increase. 
+In the first and second plot and also in the output of the function it becomes evident that the R-squared value is increasing only in very small increments after the third predictor is added. Also the ACI only becomes ever so slightly smaller. Though it takes a lot of variables until the ACI starts to increase. Maybe a tougher criterion than a only ever so slightly decreasing AIC should be chosen (but I don't really have the statistical knowledge to back this claim).
 
-The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted valueshave a positive residual while great vaues tend to be slightly negative. This is not ideal since the distribution should show no visible deviation from the x= 0 line and just be like a random point could. This may be because negative values dont make sense and so the residuals must always be positive.
+The Residual vs Fitted plot for the resulting multivariate model of the stepwise forward regression indicates that the lower fitted values have a positive residual while great vaues tend to be slightly negative. This is not ideal since the distribution should show no visible deviation from the x= 0 line and just be like a random point could. This is probably because negative values of GPP don't make sense and so the residuals must always be positive.
+
 The Residual vs Leverage Plot shows that no single point crosses the Cook's Distance. Generally the points with more leverage seem to fit nicely into the model.
 
-An interesting observation is when we compare the resulti multivariate regression to the bivariate one. There the order of the best predictors does not correspond to the order in which the predictors are added to the multivariate model. For example the second highest R-Squared value is 0.43 with the predictor SW_IN_F. This predictor is then only added as 5th predictor to the multivariate model. So the ranking of r-squared values of bivariate models does not predict the order in which the predictors are added to the multivariate model.
+An interesting observation is when we compare the result multivariate regression to the bivariate one. There the order of the best predictors does not correspond to the order in which the predictors are added to the multivariate model. For example the second highest R-Squared value is 0.43 with the predictor SW_IN_F. This predictor is then only added as 5th predictor to the multivariate model. So the ranking of r-squared values of bivariate models does not predict the order in which the predictors are added to the multivariate model.

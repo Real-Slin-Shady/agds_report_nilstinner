@@ -1,4 +1,6 @@
-Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
+#Manual stepwise forward regression.
+#Takes a tidy dataframe and a variable to predict (only one) and can take some columns of the dataframe that should not be used as predictors.
+Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns = NULL){
   unused_predictors <-
     hh_fluxes|>
     select(-all_of(toPredict),
@@ -8,7 +10,7 @@ Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
   ACI_condition <- TRUE #Condition for loop
   old_modelACI <- Inf #Initial state of ACI value...
   Used_Predictors = NULL # Vector to later save the used predictor values
-  models = list()
+  models = list() #list to manage the best models...
   
   while (ACI_condition) {
     models_temp <-  list() #overriding to save models for each run
@@ -34,7 +36,7 @@ Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
       old_modelACI <- modelACI #Replacing new one with old because check passed
       models[[names(predictor_rsquared)]] <- models_temp[[which.max(r_squared)]]}#Saving Model for later visualization
     
-  if (identical(unused_predictors, character(0))) {
+  if (identical(unused_predictors, character(0))) {#Additional backup solution to terminate if all predictors were used...
     ACI_condition <- FALSE
     print("Terminate since all predictors used")
   }
@@ -48,5 +50,5 @@ Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns){
     print(modelACI)
     cat("\n\n\n")
   }
-  return(models)
+  return(models) #returns only models that met the criterion.
 }
