@@ -6,7 +6,7 @@ output: html_document
 ---
 
 # Setup and Data cleaning
-first, we load all data and we perform data cleaning and quality controls. These steps were specified in the excercise and so will not be discussed further.
+First, we load all data and we perform data cleaning and quality controls. These steps were specified in the excercise and so will not be discussed further.
 
 ```{r,message = FALSE}
 set.seed(1982)
@@ -18,7 +18,7 @@ installed_packages <- packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
   install.packages(packages[!installed_packages])
 }else{
-  print("All packages sucessfully installed")
+  print("All packages installed")
 }
 
 invisible(lapply(packages, library, character.only = TRUE)) #load packages
