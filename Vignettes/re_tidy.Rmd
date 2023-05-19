@@ -8,6 +8,12 @@ output: html_document
 This data come from the study of Groenigen et al. 2014, https://doi.org/10.1126/science.1249534.
 It contains soil parameters and will be used to calculate the log response ratio for experiments in various groupings.
 Fist, the excel file was cleaned to be machine readable and then saved as a csv file. The original file can be found in the appendix of the study.
+The Log_response Ratio is defined as: 
+$$
+\text{RR} = \ln \left( \frac{x_\text{elevated}}{x_\text{ambient}} \right)
+$$
+Source: https://github.com/geco-bern/agds
+
 
 # Setup of Enviroment
 First, let's load the packages and the data.
@@ -28,7 +34,7 @@ soil_organic_carbon <- read_csv("../data/1249534s1-s6.csv") #Reading in datafram
 
 ```
 # Calculating Log-Response Ratios
-First, let's calculate the Response ratio for each experiment
+Now, let's calculate the Response ratio for each experiment:
 
 ```{r}
 
@@ -36,14 +42,14 @@ soil_organic_carbon |>
   #Calculating log response ration for each entry
   mutate(log_response_ratio = log(increased_CO2_mean/ambient_CO2_mean, base = exp(1))) |> 
   group_by(Experiment) |> 
-  summarise(mean(log_response_ratio)) |>#Group by Experiment with the mean response ratio
+  summarise(round(mean(log_response_ratio),4)) |>#Group by Experiment with the mean response ratio
   knitr::kable(col.names = c("Experiment","Log_Response_Ratio")) #Make it nice looking
 
 ```
 
 
 
-Now, let's calculate the Response ratio for the various duration of time not grouped by experiment. The log response ratios will be grouped by less than 3 years, between 3 and 6 years including edge cases and then also more than six years.
+At last, let's calculate the Response ratio for the various duration of time not grouped by experiment. The log response ratios will be grouped by less than 3 years, between 3 and 6 years including edge cases and then also more than six years.
 
 
 ```{r}
@@ -54,7 +60,7 @@ soil_organic_carbon |>
                                    time_years <= 6 & time_years >= 3 ~ factor("3-6"),
                                    time_years > 6 ~ factor("> 6"))) |>
   group_by(experiment_phase) |> 
-  summarise(mean(log_response_ratio)) |> #Again group by, now for duration of experiment
+  summarise(round(mean(log_response_ratio),4)) |> #Again group by, now for duration of experiment
   knitr::kable(col.names = c("Duration","Log_Response_Ratio")) #And again, make it nice looking
 
 ```

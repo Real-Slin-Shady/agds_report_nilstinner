@@ -112,6 +112,7 @@ print(paste("Optimal k of Davos:",mod_cv_dav$bestTune$k))
 print(paste("Optimal k of Laegern:",mod_cv_lae$bestTune$k))
 
 ```
+We can see that the best k was chosen to be 40 for Davos and 30 fr Laegern.
 
 # Within-Site Predictions and Across-Site Predictions
 
@@ -194,7 +195,15 @@ eval_model(mod_cv,daily_fluxes_dav_test,daily_fluxes_lae_test,plot_name1 = "Test
 
 
 
-#kp macht keinen sinn
+```
+
+The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefore is weighted heavier than laegern which introduces a bias towards more accurate predictions for davos.
+Furthermore the bias for Laegern is negative and the bias for Davos is positive. 
+
+
+
+```{r}
+
 
 daily_fluxes_dav_test_plot <- daily_fluxes_dav_test |>
   drop_na()
@@ -209,34 +218,75 @@ daily_fluxes_dav_test_plot <- daily_fluxes_dav_test |>
 
 
 ggplot(data = daily_fluxes_dav_test_plot, aes(x = month, y = residuals, group = year, color = factor(year))) +
-  geom_line() 
+  geom_line() +
+  labs(title = "Davos",color = "Years")+
+  theme_classic()
 
 daily_fluxes_dav_test_plot <- daily_fluxes_dav_test |>
   drop_na()
   daily_fluxes_dav_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_dav_test_plot )
   
 daily_fluxes_dav_test_plot |>
-  mutate(month = month(TIMESTAMP),
+  mutate(month = factor(month(TIMESTAMP)),
          residuals = fitted-GPP_NT_VUT_REF)|>
   group_by(month)|>
   reframe(residuals = mean(residuals))|>
-  ggplot(aes(x = month, y = residuals))+
-  geom_line()
+  ggplot(aes(x = month, y = residuals,group = 1))+
+  geom_line()+
+  geom_hline(yintercept=0, linetype="dashed", 
+               color = "red", size=0.5)+
+  ylim(-3,1)+
+  labs(title = "Davos")+
+  theme_classic()
+
+
+#--------
+
+daily_fluxes_lae_test_plot <- daily_fluxes_lae_test |>
+  drop_na()
+  daily_fluxes_lae_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_lae_test_plot )
+  daily_fluxes_lae_test_plot <- daily_fluxes_lae_test_plot |>
+  mutate(yearmonth = format(TIMESTAMP, "%m/%Y"),
+         residuals = fitted-GPP_NT_VUT_REF)|>
+  group_by(yearmonth)|>
+  reframe(residuals = mean(residuals),
+            year = year(TIMESTAMP))|>
+    mutate(month = str_sub(yearmonth,1,2))
+
+
+ggplot(data = daily_fluxes_lae_test_plot, aes(x = month, y = residuals, group = year, color = factor(year))) +
+  geom_line() +
+  labs(title = "Laegern",color = "Years")+
+  theme_classic()
+
+daily_fluxes_lae_test_plot <- daily_fluxes_lae_test |>
+  drop_na()
+  daily_fluxes_lae_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_lae_test_plot )
+  
+daily_fluxes_lae_test_plot |>
+  mutate(month = factor(month(TIMESTAMP)),
+         residuals = fitted-GPP_NT_VUT_REF)|>
+  group_by(month)|>
+  reframe(residuals = mean(residuals))|>
+  ggplot(aes(x = month, y = residuals,group = 1))+
+  geom_line()+
+  labs(title = "Laegern")+
+  geom_hline(yintercept=0, linetype="dashed", 
+               color = "red", size=0.5)+
+  ylim(-3,1)+
+  theme_classic()
 
 
 
 
-daily_fluxes_dav_test_plot <- melt(daily_fluxes_dav_test_plot, id.vars = "TIMESTAMP", value.name  = "GPP_NT_VUT_REF")
-
-
-  ggplot(daily_fluxes_dav_test_plot,aes(x = TIMESTAMP,y = GPP_NT_VUT_REF,col = Year))+
-    geom_line()
 
 
 ```
 
-The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefor is weighted heavier than laegern which introduces a bias towards more accurate predictions for davos.
-
-
-#idea: deciduous vs broadleave: shouldt there be a winter bias? No? -> dont understand last part of questions...
-#Mabye bias? -> where model tends to?
+We can now see the deviations for each year as for each month, and then also the mean of all the years.
+Overall, again Laegern shows more deviations on average, which might be due to the higher sample size.
+The GPP of Laegern is overestimated a bit in the spring, and underestimated a lot in summer -> makes sense...
+The GPP of Davos is quite overestimated in the winter, and underestimated in spring/early summer -> makes sense...
+These differences might be induced by different climatic conditions facing these two sites, which intern also lead to another species composition.
+As expected Laegern GPP is underestimated in summer and overestimated in winter. This makes sense since Laegern is a mixed forest with a lot of decidous trees. This means that in winter, no potosynthesis even in favorable conditions can occur. But in summer these species might be more productive than the model expects because the unproductivity might have an influence on these measures. Alternativly, deciduous trees might be simply very productive in the summer to compensate for their inactivity in the winter.
+For Davos the results were a little bit suprising. There, deviations are much smaller. In the winter, the model slightly overestimates the productivity of the forest. This is suprising since these are mostly evergreen needleleaf which would also be productive during the winter. An explanation could be snow coverage. In case of snow covering trees, the GPP would be approximately 0. This is thesiable since Davos is higher than Laeegern and might experience snow coverage in winter months. Altough if the snow stays on the needles is another question and would need further investigation.
