@@ -1,4 +1,5 @@
-#Models all bivariate models of a linear regression for all variables in a df except the target and manually removed rows.
+#Models all bivariate linear regressions for all variables in a tidydf except the toPredict and manually removed Columns.
+#Returns all models as a list.
 
 bivariate_regressions<-function(tidydf,toPredict,removeColumns = NULL){
   all_predictors <-

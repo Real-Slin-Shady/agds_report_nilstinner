@@ -1,5 +1,6 @@
 #Manual stepwise forward regression.
-#Takes a tidy dataframe and a variable to predict (only one) and can take some columns of the dataframe that should not be used as predictors.
+#Takes a tidy dataframe and a variable to predict and can take some columns of the dataframe that should not be used as predictors.
+#Returns all models as a list.
 Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns = NULL){
   unused_predictors <-
     hh_fluxes|>

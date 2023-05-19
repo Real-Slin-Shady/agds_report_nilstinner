@@ -25,6 +25,7 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
   metrics_test <- df_test |> 
     yardstick::metrics(GPP_NT_VUT_REF, fitted)
   
+
   # extract values from metrics tables
   rmse_train <- metrics_train |> 
     filter(.metric == "rmse") |> 
@@ -32,14 +33,19 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
   rsq_train <- metrics_train |> 
     filter(.metric == "rsq") |> 
     pull(.estimate)
-
-
+  mae_train <- metrics_train |> 
+    filter(.metric == "mae") |> 
+    pull(.estimate)
+  
   
   rmse_test <- metrics_test |> 
     filter(.metric == "rmse") |> 
     pull(.estimate)
   rsq_test <- metrics_test |> 
     filter(.metric == "rsq") |> 
+    pull(.estimate)
+  mae_test <- metrics_test |> 
+    filter(.metric == "mae") |> 
     pull(.estimate)
   
   # visualise as a scatterplot
@@ -68,7 +74,7 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
     stat_smooth(method="loess",formula = 'y ~ x', na.rm=TRUE)+
     labs(x = "Date",y = "Residuals", subtitle = paste("Bias:", round(mean(df_train$fitted- df_train$GPP_NT_VUT_REF),4)))+
     geom_hline(yintercept=0, linetype="dashed", 
-               color = "red", size=0.5)+
+               color = "red", linewidth=0.5)+
     theme_classic()
   
   plot_4 <- ggplot(data = df_test, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
@@ -76,7 +82,7 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
     stat_smooth(method="loess",formula = 'y ~ x', na.rm=TRUE)+
     labs(x = "Date",y = "Residuals", subtitle = paste("Bias: " ,round(mean(df_test$fitted-df_test$GPP_NT_VUT_REF),4)))+ 
     geom_hline(yintercept=0, linetype="dashed", 
-               color = "red", size=0.5)+
+               color = "red", linewidth=0.5)+
     theme_classic()
   
   
@@ -87,5 +93,8 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
   }else if(out == "return_plots"){
     return(list("plot_1" = plot_1,"plot_2" = plot_2))
   }else if(out == "rmse"){
-    return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test))}
+    return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test))
+  }else if(out == "mae"){
+    return(list("mae_train" = mae_train,"mae_test" = mae_test))
+    }
 }

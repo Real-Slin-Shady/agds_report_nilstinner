@@ -4,8 +4,9 @@ author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+
 # Setup and Data cleaning
-first, we laod all data and we perform data cleaning and quality controls.
+first, we load all data and we perform data cleaning and quality controls. These steps were specified in the excercise and so will not be discussed further.
 
 ```{r,message = FALSE}
 set.seed(1982)
@@ -62,7 +63,7 @@ vis_miss(
 
 ```
 
-We see that sadly, a lot of data is missing from the long wave infrared radiation. However since this data cleaning step is required as described in the exercise, models will be applied to this dataset version.
+We see that sadly, a lot of data is missing from the long wave infrared radiation. However since this data cleaning step is required as described in the exercise, models will be applied to this dataset version. 
 
 # Data Evaluation
 
@@ -97,7 +98,7 @@ Now we plot the performance of the KNN model.
  
 ## Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?
 ## Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
-Because regression predicts what the connections there are between variables for all variables (global) and so for both datasets behaves similarly because there is a lot of data in the training part that is all fitted with one line and so the regression line will miss also points of the training data (maybe underfit), while nearest neighbour calculates a local regression so it fits training data very well (somehow maybe overfitting?) but may not fit new data as well. Here this is not the case and the knn model appreas to outperform the lm model even in the test dataset and so is probably the better fit. This is probably because the knn model captures local trends better due to the aforementioned factors.
+Because regression predicts what the connections  are between variables for all variables (global) and so for both datasets behaves similarly because there is a lot of data in the training part that is all fitted with one line and so the regression line will miss also points of the training data (maybe underfit), while nearest neighbour calculates a local regression so it fits training data very well (somehow maybe overfitting?) but may not fit new data as well. Here this is not the case and the knn model appreas to outperform the lm model even in the test dataset and so is probably the better fit. This is probably because the knn model captures local trends better due to the aforementioned variance.
 
 ## How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
 
@@ -127,46 +128,50 @@ If there is slight variation like a local increase of the residuals around Janua
 ## state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
 If k = 1, training data will be predicted with 0 error and perfect R2, but the test set performance will be very poor with a low R2 and a high MAE.
 If k approaches n, the training data will show a not optimal R2 and MAE because it is underfitted, and the test data will also not have a optimal fit since variation is not captured as desired.
+Therefore the ideal case must be somewhere in between.
 
+## Put your hypothesis to the test! Write code that splits the data into a training and a test set and repeats model fitting and evaluation for different values for k. Visualise results, showing model generalisability as a function of model complexity. Describe how a “region” of overfitting and underfitting can be determined in your visualisation. Write (some of your) code into a function that takes k as an input and and returns the MAE determined on the test set.
 
 ```{R}
 
 for (k in c(1,10,50,200)) {
   temp_KNN <- model_daily_fluxes(split$train,split$test,method_loc = "knn",kofKNN = k)
+  print(paste("Model k:",k))
   print(eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "plot")) 
+  print(eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "mae")) 
 }
 ```
-The aforementioned things are visible in these plots: with K = 1 the training dataset performes very well but the test dataset performs miserable. 
-As of for the other extreme, the model also appreas to slightly decrease the R2 value as well as increase the MAE when the k becomes extremely high. This is due to underfitting with to many neighbors chosen.
+The aforementioned things are visible in these plots: with K = 1 the training dataset performes very well but the test dataset performs poorly with a high mae. 
+As of for the other extreme, the model also appears to slightly decrease the R2 value as well as increase the MAE when the k becomes extremely high. This is due to underfitting with to many neighbors chosen. The model then doesnt capture local trends anymore.
 
 
 ## Is there an “optimal”  k in terms of model generalisability? Edit your code to determine an optimal k
-For the "optimal" i would argue based on my current knowledge that we want the best performance possible in the RMSE in the test dataset.
+For the "optimal" i would argue based on my current knowledge that we want the best performance possible in the MAE in the test dataset.
 We can loop over several possibilities of k and then do an evaluation:
 
  
 ```{R}
-rmse_test <-  NULL #Vector to save the R2 values
+mae_test <-  NULL #Vector to save the MAE values
 values_k <- c(1,seq(5,to = 100, by = 5),125,150) #values to be tested
 for (k in values_k) {
   
     temp_KNN <- model_daily_fluxes(split$train,split$test,method_loc = "knn",kofKNN = k)
-  rmse_test <- c(rmse_test, eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "rmse")$rmse_test)
+  mae_test <- c(mae_test, eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "mae")$mae_test)
   #a now output is desired: the R2 values. Therefore the model itself returns the R2 value of the test and training datasets as a list. There, only the test R2 is used.
   
 } #This takes some time to load since a lot of models are evaluated.
 
-rmse_test <- tibble(k = values_k,rmse_test = rmse_test) #save values as a nice tibble
+mae_test <- tibble(k = values_k,mae_test = mae_test) #save values as a nice tibble
 
 
-ggplot(data = rmse_test,aes(x = k, y = rmse_test))+
+ggplot(data = mae_test,aes(x = k, y = mae_test))+
   geom_point()+geom_line()+theme_classic()+
-  labs(x = "k of KNN",y = "RMSE")#plot the data
+  labs(x = "k of KNN",y = "MAE")#plot the data
 
-rmse_test |>
-  filter(rmse_test == min(rmse_test)) #print the best performing model.
-rm(temp_KNN,rmse_test,values_k,k)
+mae_test |>
+  filter(mae_test == min(mae_test)) #print the best performing model.
+
 
 ```
-As predicted in our less elaborate approach, the RMSE value of the test data increases at first (with some ranom fluctuations) until k = 60 when it starts to decrease again. Therefor k = 60 is our "optimal" k.
+As predicted in our less elaborate approach, the MAE value of the test data increases at first (with some random fluctuations) until k = 15 when it starts to decrease again. Therefor k = 15 is our "optimal" k.
 Though this is not optimal. We should never use the test data to optimize the model. In a optimal case we would set aside another 20-30% of the data to perform final model performance.
