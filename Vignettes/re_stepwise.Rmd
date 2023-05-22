@@ -7,6 +7,7 @@ output: html_document
 
 #Introduction
 This script is an implementation for a stepwise forward regression. The data used is the half hourly fluxes dataset provided by the geocomputation group of the university of Bern and contains data from the FLUXNET dataset.
+This report not only implements the stepwise forward regression, it also analysis first step results and discusses different implementation possibilities for the stepwise forward regression.
 
 # Setup and Loading
 At first, we install and load the packages, then we load the dataset halfhourly fluxes. 

@@ -7,6 +7,7 @@ output: html_document
 ---
 # General Introduction
 
+
 ## Report Content
 This report looks at the dataset airquality from the standard library of R. Data was collected in 1973  by Chambers et al. by the department of conservation and the National Weather Service. There are 6 variables: Ozone, solar radiation, wind speed, temperature and 2 columns containing the month and the day of the month separately.
 
@@ -32,6 +33,7 @@ airquality <- airquality |>
 
 ```
 This results in tidy data. 
+
 # Data Analysis and Visualisation
 
 ## Ozone and Temperature Overview

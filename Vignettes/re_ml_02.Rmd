@@ -210,6 +210,8 @@ Generally, the model performs better than models for single sites used to predic
 The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefore is weighted heavier than laegern which introduces a bias towards more accurate predictions for davos. This might also be the reason for why this approach is probably not a good idea. It might give more weight for a site that has more datapoints. This could be avoided if both sites had the same number of valid observations. Further reasons for why a single model might be a bad idea will follow.
 The bias for Laegern is negative and the bias for Davos is positive.
 
+Lets further explore differences in the predicted values for each site:
+
 ```{r}
 
 
