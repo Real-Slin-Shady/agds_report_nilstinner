@@ -19,15 +19,8 @@ Source: https://github.com/geco-bern/agds
 First, let's load the packages and the data.
 ```{r, message = FALSE}
 packages <- c("tidyverse")
-# Install packages not yet installed
-installed_packages <- packages %in% rownames(installed.packages())
-if (any(installed_packages == FALSE)) {
-  print("Installing missing packages")
-  install.packages(packages[!installed_packages])
-}else{
-  print("All packages installed")
-}
-invisible(lapply(packages, library, character.only = TRUE)) #Loading
+source("../R/load_packages.R")
+load_packages(packages)
 soil_organic_carbon <- read_csv("../data/1249534s1-s6.csv") #Reading in dataframe
 
 

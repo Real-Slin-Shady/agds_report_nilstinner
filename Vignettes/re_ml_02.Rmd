@@ -4,6 +4,11 @@ author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+# Introduction
+In this Report, we want to investigate how models perform across site for GPP prediction. Thereby two sites (Davos and Laegern) will be compared. 
+These sites differ in their climates and species compositions.
+With this analysis we want to investigate how a model trained on one site behaves if it predicts another site and how a model trained on all the data performes.
+We also want to investigate how site characteristics such as species present and climate might have an impact on the model.
 
 # Setup and Data cleaning
 First, we load all data and we perform data cleaning and quality controls.
@@ -12,18 +17,12 @@ First, we load all data and we perform data cleaning and quality controls.
 ```{r, message = F}
 
 # Package names
-packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret","cowplot","stringr")
+packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret","cowplot","stringr","zoo")
 
-# Install packages not yet installed
-installed_packages <- packages %in% rownames(installed.packages())
-if (any(installed_packages == FALSE)) {
-  install.packages(packages[!installed_packages])
-}else{
-  print("All packages installed")
-}
+source("../R/load_packages.R")
+load_packages(packages)
 
 
-invisible(lapply(packages, library, character.only = TRUE))
 
 clean_up <- function(df){#Define function for cleanup since duplicated code is smelly
   df <- df |>
@@ -168,7 +167,7 @@ rm(title_top,title_bottom,top_row,bootom_row,plots_1,plots_2,plots_3,plots_4) #C
 
 ## Interpreation
 The models both perform much better on the test for the data of the site that they were trained for. This is roughly expected since the situation in site may vary a lot in example tree species and climate. This will be discussed later in more dept.
-
+Overall the model of Davos seems more robust but doesnt perdict the data of Laegern as well as the model of Laegern that is usde to predict the data of Davos.
 
 # Single Model
 Now we generate the model with a joined dataset for both sites. 
@@ -179,7 +178,7 @@ set.seed(1982)  # for reproducibility
 daily_fluxes <- bind_rows(daily_fluxes_dav,daily_fluxes_lae,.id = "id")
 
 
-split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
+split <- rsample::initial_split(daily_fluxes, prop = 0.8, strata = "VPD_F")
 
 daily_fluxes_train <- rsample::training(split)
 daily_fluxes_test <- rsample::testing(split)
@@ -207,9 +206,9 @@ eval_model(mod_cv,daily_fluxes_dav_test,daily_fluxes_lae_test,plot_name1 = "Test
 
 ```
 
+Generally, the model performs better than models for single sites used to predict another site.
 The model preforms better for davos than laegern. This might be because davos just simply has more datapoints and therefore is weighted heavier than laegern which introduces a bias towards more accurate predictions for davos. This might also be the reason for why this approach is probably not a good idea. It might give more weight for a site that has more datapoints. This could be avoided if both sites had the same number of valid observations. Further reasons for why a single model might be a bad idea will follow.
 The bias for Laegern is negative and the bias for Davos is positive.
-
 
 ```{r}
 
@@ -231,29 +230,33 @@ ggplot(data = daily_fluxes_dav_test_plot, aes(x = month, y = residuals, group = 
   labs(title = "Davos",color = "Years")+
   theme_classic()
 
+
 daily_fluxes_dav_test_plot <- daily_fluxes_dav_test |>
   drop_na()
   daily_fluxes_dav_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_dav_test_plot )
   
 daily_fluxes_dav_test_plot |>
-  mutate(month = factor(month(TIMESTAMP)),
+    mutate(day = as.Date(format(TIMESTAMP, format="%m-%d"), format = "%m-%d"),
          residuals = fitted-GPP_NT_VUT_REF)|>
-  group_by(month)|>
+  group_by(day)|>
   reframe(residuals = mean(residuals))|>
-  ggplot(aes(x = month, y = residuals,group = 1))+
-  geom_line()+
-  geom_hline(yintercept=0, linetype="dashed", 
-               color = "red", size=0.5)+
-  ylim(-3,1)+
-  labs(title = "Davos")+
-  theme_classic()
+  ggplot(aes(day, residuals)) +
+    geom_point(alpha = 0.3) +
+    geom_line(aes(y=rollmean(residuals, 10, na.pad=TRUE))) +
+    labs(x = "Date",y = "Residuals", subtitle = "Davos")+ 
+    geom_hline(yintercept=0, linetype="dashed", 
+               color = "red", linewidth=0.5)+
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
+    theme_classic()
 
-
+  
 #--------
 
 daily_fluxes_lae_test_plot <- daily_fluxes_lae_test |>
   drop_na()
-  daily_fluxes_lae_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_lae_test_plot )
+
+  daily_fluxes_lae_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_lae_test_plot)
+  
   daily_fluxes_lae_test_plot <- daily_fluxes_lae_test_plot |>
   mutate(yearmonth = format(TIMESTAMP, "%m/%Y"),
          residuals = fitted-GPP_NT_VUT_REF)|>
@@ -261,6 +264,7 @@ daily_fluxes_lae_test_plot <- daily_fluxes_lae_test |>
   reframe(residuals = mean(residuals),
             year = year(TIMESTAMP))|>
     mutate(month = str_sub(yearmonth,1,2))
+  
 
 
 ggplot(data = daily_fluxes_lae_test_plot, aes(x = month, y = residuals, group = year, color = factor(year))) +
@@ -268,34 +272,37 @@ ggplot(data = daily_fluxes_lae_test_plot, aes(x = month, y = residuals, group = 
   labs(title = "Laegern",color = "Years")+
   theme_classic()
 
+
+
 daily_fluxes_lae_test_plot <- daily_fluxes_lae_test |>
   drop_na()
   daily_fluxes_lae_test_plot$fitted <- predict(mod_cv, newdata =  daily_fluxes_lae_test_plot )
   
 daily_fluxes_lae_test_plot |>
-  mutate(month = factor(month(TIMESTAMP)),
+    mutate(day = as.Date(format(TIMESTAMP, format="%m-%d"), format = "%m-%d"),
          residuals = fitted-GPP_NT_VUT_REF)|>
-  group_by(month)|>
+  group_by(day)|>
   reframe(residuals = mean(residuals))|>
-  ggplot(aes(x = month, y = residuals,group = 1))+
-  geom_line()+
-  labs(title = "Laegern")+
-  geom_hline(yintercept=0, linetype="dashed", 
-               color = "red", size=0.5)+
-  ylim(-3,1)+
-  theme_classic()
+  ggplot(aes(day, residuals)) +
+    geom_point(alpha = 0.3) +
+    geom_line(aes(y=rollmean(residuals, 10, na.pad=TRUE))) +
+    labs(x = "Date",y = "Residuals", subtitle = "Laegern")+ 
+    geom_hline(yintercept=0, linetype="dashed", 
+               color = "red", linewidth=0.5)+
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
+    theme_classic()
 
 
-
-
-
+rm(daily_fluxes_dav_test_plot,daily_fluxes_lae_test_plot)
 
 ```
 
-We can now see the deviations for each year as for each month, and then also the mean of all the years.
+We can now see the deviations for each year as for each month, and then also the mean of all the years as a rolling average.
 Overall, again Laegern shows more deviations on average, which might be due to the higher sample size.
 The GPP of Laegern is overestimated a bit in the spring, and underestimated a lot in summer.
-The GPP of Davos is quite overestimated in the winter, and underestimated in spring/early summer.
+The GPP of Davos has not a very clear over or underestimation.
 These differences might be induced by different climatic conditions facing these two sites, which intern also lead to another species composition.
-As expected Laegern GPP is underestimated in summer and overestimated in winter. This makes sense since Laegern is a mixed forest with a lot of decidous trees. This means that in winter, no photosynthesis even in favorable conditions can occur. But in summer these species might be more productive than the model expects because the unproductivity might have an influence on these measures. Alternatively, deciduous trees might be simply very productive in the summer to compensate for their inactivity in the winter.
-For Davos the results were a little bit surprising. There, deviations are much smaller. In the winter, the model slightly overestimates the productivity of the forest. This is surprising since these are mostly evergreen needleleaf which would also be productive during the winter. An explanation could be snow coverage. In case of snow covering trees, the GPP would be approximately 0. This is thesiable since Davos is higher than Laegern and might experience snow coverage in winter months. Altough if the snow stays on the needles is another question and would need further investigation.
+Laegern is a mixed forest with deciduous trees as well as conifers. Davos is a mountainous site with mostly conifer trees and a much colder climate.
+As expected Laegern GPP is underestimated in summer and slightly overestimated in winter/spring. This makes sense since Laegern is a mixed forest with a lot of decidous trees. This means that in winter, no photosynthesis even in favorable conditions can occur. But in summer these species might be more productive than the model expects because the unproductivity might have an influence on these measures. Alternatively, deciduous trees might be simply very productive in the summer to compensate for their inactivity in the winter. This productivity in the summer could be the reason for why we have a negative bias overall in the evaluation dataset of Laegern. To account for the missing of leaves in the winter, data about the leaf coverage could be very useful. 
+For Davos the results were a little bit surprising. There, deviations are not as systematic and so the model performes better.
+Another source of the inaccuracies of the model could be that the model "mixes" data up and so predicts cross site if the conditions are close. This means that for example a hot summer day in Davos could predict a spring day in Laegern. This could then lead to systematic offsets.

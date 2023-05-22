@@ -16,15 +16,8 @@ At last, we visualize missing data. Multicolinearity is not checked for.
 # Package names
 packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","ggpubr")
 
-# Install packages not yet installed
-installed_packages <- packages %in% rownames(installed.packages())
-if (any(installed_packages == FALSE)) {
-  install.packages(packages[!installed_packages])
-}else{
-  print("All packages installed")
-}
-
-invisible(lapply(packages, library, character.only = TRUE))
+source("../R/load_packages.R")
+load_packages(packages)
 
 hh_fluxes<- read_csv("../data/halfhourly_data.csv") |>
   select(-ends_with("MDS"),CO2_F_MDS) #Interpolated data is removed except CO2, there only interpolated data is viable...
@@ -34,7 +27,7 @@ vis_miss(
   cluster = FALSE, 
   warn_large_data = FALSE
   ) #Visualize
-rm(installed_packages,packages) #declutter
+
 ```
 It appears that most data is missing in PPFD_IN. Overall 3.4% of the data is missing.
 Data containing MDS data, which is interpolated data, is removed. Only CO2 is kept, because there is no raw form of the data.

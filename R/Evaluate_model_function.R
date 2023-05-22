@@ -71,7 +71,7 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
   #visualize the time dimension of the residuals
   plot_3 <- ggplot(data = df_train, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
     geom_point(alpha = 0.3) +
-    stat_smooth(method="loess",formula = 'y ~ x', na.rm=TRUE)+
+    geom_line(aes(y=rollmean(fitted-GPP_NT_VUT_REF, 50, na.pad=TRUE)),color = "green3",linewidth = 0.5) +
     labs(x = "Date",y = "Residuals", subtitle = paste("Bias:", round(mean(df_train$fitted- df_train$GPP_NT_VUT_REF),4)))+
     geom_hline(yintercept=0, linetype="dashed", 
                color = "red", linewidth=0.5)+
@@ -79,7 +79,7 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
   
   plot_4 <- ggplot(data = df_test, aes(TIMESTAMP, fitted-GPP_NT_VUT_REF)) +
     geom_point(alpha = 0.3) +
-    stat_smooth(method="loess",formula = 'y ~ x', na.rm=TRUE)+
+    geom_line(aes(y=rollmean(fitted-GPP_NT_VUT_REF, 50, na.pad=TRUE)),color = "green3",linewidth = 1) +
     labs(x = "Date",y = "Residuals", subtitle = paste("Bias: " ,round(mean(df_test$fitted-df_test$GPP_NT_VUT_REF),4)))+ 
     geom_hline(yintercept=0, linetype="dashed", 
                color = "red", linewidth=0.5)+
@@ -96,5 +96,5 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
     return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test))
   }else if(out == "mae"){
     return(list("mae_train" = mae_train,"mae_test" = mae_test))
-    }
+  }
 }

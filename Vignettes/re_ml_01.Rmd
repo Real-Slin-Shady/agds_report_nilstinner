@@ -4,25 +4,22 @@ author: "Nils Tinner"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+# Introduction
+This report investigates how models behave for the hyperparameter of k in knn. Furthermore a evaluation of the bias and the residuals over time will be performed. 
+These topics will be answered based on the posed questions posed in the report exercise.
 
 # Setup and Data cleaning
 First, we load all data and we perform data cleaning and quality controls. These steps were specified in the excercise and so will not be discussed further.
 
 ```{r,message = FALSE}
 set.seed(1982)
+
+
+
 # Package names
-packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret")
-
-# Install packages not yet installed
-installed_packages <- packages %in% rownames(installed.packages())
-if (any(installed_packages == FALSE)) {
-  install.packages(packages[!installed_packages])
-}else{
-  print("All packages installed")
-}
-
-invisible(lapply(packages, library, character.only = TRUE)) #load packages
-# rm(packages,installed_packages)
+packages <- c("lubridate","tidyverse","visdat","yardstick","purrr","reshape2","rsample","recipes","caret","zoo")
+source("../R/load_packages.R")
+load_packages(packages)
 
 
 daily_fluxes <- read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") |>  
@@ -96,15 +93,14 @@ Now we plot the performance of the KNN model.
 
 # Interpretation
  
-## Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?
-## Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
-Because regression predicts what the connections  are between variables for all variables (global) and so for both datasets behaves similarly because there is a lot of data in the training part that is all fitted with one line and so the regression line will miss also points of the training data (maybe underfit), while nearest neighbour calculates a local regression so it fits training data very well (somehow maybe overfitting?) but may not fit new data as well. Here this is not the case and the knn model appreas to outperform the lm model even in the test dataset and so is probably the better fit. This is probably because the knn model captures local trends better due to the aforementioned variance.
+## Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model? Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
+Because regression predicts what the connections  are between variables for all variables (global) and so for both datasets behaves similarly because there is a lot of data in the training part that is all fitted with one line and so the regression line will miss also points of the training data (maybe underfit), while nearest neighbour calculates a local regression so it fits training data very well (somehow maybe overfitting?) but may not fit new data as well. Here this is not the case and the knn model appreas to outperform the lm model even in the test dataset and so is probably the better fit (RMSE is smaller). This is probably because the knn model captures local trends better due to the aforementioned variance.
 
 ## How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
 
-Lm no variance and per definition no/very small bias.
+Lm almost no variance and per definition no/very small bias. So this is not a very optimal case of a model.
 
-KNN can have some bias and a balanced variance -> giving nicer trade-off if neighbors (k) not to few or too many.
+KNN can have some bias and a balanced variance. This gives a nicer trade-off if neighbors (k) are not to few or too many.
 
 
 ## Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
@@ -123,7 +119,8 @@ print("Model lm")
 ```
 
 Not much variation in the residuals over time, residuals were used to show the variations of observed and modeled GPP. 
-If there is slight variation like a local increase of the residuals around January of 2008 or the decrease in 2010, this is visible in all models with all data.
+If there is a hiatus of data around January of 2008 and a the decrease arround 2011, this is visible in all models with all data.
+Of course, the bias of the lm in the training is 0 (definition of Bias).
 
 ## state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
 If k = 1, training data will be predicted with 0 error and perfect R2, but the test set performance will be very poor with a low R2 and a high MAE.
@@ -141,7 +138,7 @@ for (k in c(1,10,50,200)) {
   print(eval_model(mod = temp_KNN, df_train = split$train, df_test = split$test, out = "mae")) 
 }
 ```
-The aforementioned things are visible in these plots: with K = 1 the training dataset performes very well but the test dataset performs poorly with a high mae. 
+The aforementioned things are visible in these plots: with k = 1 the training dataset performes very well but the test dataset performs poorly with a high mae. 
 As of for the other extreme, the model also appears to slightly decrease the R2 value as well as increase the MAE when the k becomes extremely high. This is due to underfitting with to many neighbors chosen. The model then doesnt capture local trends anymore.
 
 

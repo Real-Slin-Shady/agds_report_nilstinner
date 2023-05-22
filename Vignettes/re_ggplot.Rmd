@@ -19,15 +19,8 @@ First, lets do a set up and clean up the messy month and days columns from the s
 # Package names
 packages <- c("lubridate","tidyverse","ggridges","weathermetrics")
 
-# Install packages not yet installed
-installed_packages <- packages %in% rownames(installed.packages())
-if (any(installed_packages == FALSE)) {
-  install.packages(packages[!installed_packages])
-}else{
-  print("All packages installed")
-}
-
-invisible(lapply(packages, library, character.only = TRUE))
+source("../R/load_packages.R")
+load_packages(packages)
 
 #Now: clean up the data
 airquality <- datasets::airquality
