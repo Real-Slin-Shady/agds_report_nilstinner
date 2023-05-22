@@ -3,6 +3,9 @@
 Welcome everybody. This Repository contains the solutions of Nils Tinner to the course Applied Geo-Data Science of the Geco Group of the University of Bern. 
 To celebrate the ocasion of you being here, I let ChatGPT compose a quick poem about this Repo.
 --------------------------------------
+
+
+
 This GitHub project is quite a delight,  
 It models, visualizes, and gives insight.  
 Using machine learning and stats galore,  
@@ -17,5 +20,8 @@ So if you want to level up your analysis game,
 This project's the one to give you fame.  
 It's user-friendly and intuitive too,  
 Making it easy for you to follow through.  
+
+
+
 --------------------------------------
 Source: ChatGPT 3.5, 17.04.2023
