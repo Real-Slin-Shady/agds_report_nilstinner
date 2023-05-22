@@ -1,7 +1,11 @@
 # Applied Geo-Data Science Course FS23 
 ### University of Bern, GECO-Group
+
+
 Welcome everybody. This Repository contains the solutions of Nils Tinner to the course Applied Geo-Data Science of the Geco Group of the University of Bern. 
 To celebrate the ocasion of you being here, I let ChatGPT compose a quick poem about this Repo.
+
+
 --------------------------------------
 
 
