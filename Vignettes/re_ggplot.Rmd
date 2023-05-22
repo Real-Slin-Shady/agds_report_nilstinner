@@ -2,7 +2,7 @@
 title: "Report Excercise \"ggplot\""
 author: "Nils Tinner"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: html_document
 
 ---
 # General Introduction
