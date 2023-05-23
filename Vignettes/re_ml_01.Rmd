@@ -93,17 +93,17 @@ Now we plot the performance of the KNN model.
 
 # Interpretation
  
-## Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model? Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
+#### Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model? Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
 Because regression predicts what the connections  are between variables for all variables (global) and so for both datasets behaves similarly because there is a lot of data in the training part that is all fitted with one line and so the regression line will miss also points of the training data (maybe underfit), while nearest neighbour calculates a local regression so it fits training data very well (somehow maybe overfitting?) but may not fit new data as well. Here this is not the case and the knn model appreas to outperform the lm model even in the test dataset and so is probably the better fit (RMSE is smaller). This is probably because the knn model captures local trends better due to the aforementioned variance.
 
-## How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
+#### How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
 
 Lm almost no variance and per definition no/very small bias. So this is not a very optimal case of a model.
 
 KNN can have some bias and a balanced variance. This gives a nicer trade-off if neighbors (k) are not to few or too many.
 
 
-## Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
+#### Visualise temporal variations of observed and modelled GPP for both models, covering all available dates:
 ```{R}
   print("Model knn")
 
@@ -122,12 +122,12 @@ Not much variation in the residuals over time, residuals were used to show the v
 If there is a hiatus of data around January of 2008 and a the decrease arround 2011, this is visible in all models with all data.
 Of course, the bias of the lm in the training is 0 (definition of Bias).
 
-## state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
+#### state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
 If k = 1, training data will be predicted with 0 error and perfect R2, but the test set performance will be very poor with a low R2 and a high MAE.
 If k approaches n, the training data will show a not optimal R2 and MAE because it is underfitted, and the test data will also not have a optimal fit since variation is not captured as desired.
 Therefore the ideal case must be somewhere in between.
 
-## Put your hypothesis to the test! Write code that splits the data into a training and a test set and repeats model fitting and evaluation for different values for k. Visualise results, showing model generalisability as a function of model complexity. Describe how a “region” of overfitting and underfitting can be determined in your visualisation. Write (some of your) code into a function that takes k as an input and and returns the MAE determined on the test set.
+#### Put your hypothesis to the test! Write code that splits the data into a training and a test set and repeats model fitting and evaluation for different values for k. Visualise results, showing model generalisability as a function of model complexity. Describe how a “region” of overfitting and underfitting can be determined in your visualisation. Write (some of your) code into a function that takes k as an input and and returns the MAE determined on the test set.
 
 ```{R}
 
@@ -142,7 +142,7 @@ The aforementioned things are visible in these plots: with k = 1 the training da
 As of for the other extreme, the model also appears to slightly decrease the R2 value as well as increase the MAE when the k becomes extremely high. This is due to underfitting with to many neighbors chosen. The model then doesnt capture local trends anymore.
 
 
-## Is there an “optimal”  k in terms of model generalisability? Edit your code to determine an optimal k
+#### Is there an “optimal”  k in terms of model generalisability? Edit your code to determine an optimal k
 For the "optimal" i would argue based on my current knowledge that we want the best performance possible in the MAE in the test dataset.
 We can loop over several possibilities of k and then do an evaluation:
 

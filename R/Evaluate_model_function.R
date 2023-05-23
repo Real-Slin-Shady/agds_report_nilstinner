@@ -86,15 +86,28 @@ eval_model <- function(mod, df_train, df_test,out = "plot",plot_name1 = "Trainin
     theme_classic()
   
   
-  if (out == "plot_all"){return(cowplot::plot_grid(plot_1, plot_2, plot_3,plot_4))}else if(out =="plot"){
-    return(cowplot::plot_grid(plot_1, plot_2))
-  }else if(out == "r.squared"){
-    return(list("rsq_train" = rsq_train,"rsq_test" = rsq_test))
-  }else if(out == "return_plots"){
-    return(list("plot_1" = plot_1,"plot_2" = plot_2))
-  }else if(out == "rmse"){
-    return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test))
-  }else if(out == "mae"){
-    return(list("mae_train" = mae_train,"mae_test" = mae_test))
-  }
+  #complicated return statements, function may be overloaded
+  
+  switch(  
+    out,  
+    "plot_all"= return(cowplot::plot_grid(plot_1, plot_2, plot_3,plot_4)),  
+    "plot"= return(cowplot::plot_grid(plot_1, plot_2)),  
+    "r.squared"= return(list("rsq_train" = rsq_train,"rsq_test" = rsq_test)),  
+    "return_plots"=  return(list("plot_1" = plot_1,"plot_2" = plot_2)),
+    "rmse"= return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test)),
+    "mae"= return(list("mae_train" = mae_train,"mae_test" = mae_test))
+  )  
+  
+  #is equivalent to (but not as pretty):
+  # if (out == "plot_all"){return(cowplot::plot_grid(plot_1, plot_2, plot_3,plot_4))}else if(out =="plot"){
+  #   return(cowplot::plot_grid(plot_1, plot_2))
+  # }else if(out == "r.squared"){
+  #   return(list("rsq_train" = rsq_train,"rsq_test" = rsq_test))
+  # }else if(out == "return_plots"){
+  #   return(list("plot_1" = plot_1,"plot_2" = plot_2))
+  # }else if(out == "rmse"){
+  #   return(list("rmse_train" = rmse_train,"rmse_test" = rmse_test))
+  # }else if(out == "mae"){
+  #   return(list("mae_train" = mae_train,"mae_test" = mae_test))
+  # }
 }

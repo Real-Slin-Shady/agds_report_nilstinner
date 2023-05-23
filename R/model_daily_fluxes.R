@@ -2,6 +2,7 @@
 
 #Function Modelling daily fluxes of dataset with fluxes and biofluxes.
 #Can differentiate between methods lm and knn with also parameters to specify the splitratio and the k of KNN if needed.
+#returns the model
 
 model_daily_fluxes <- function(trainDF,testDF,method_loc,kofKNN = 0){
 # Data splitting
@@ -21,7 +22,7 @@ mod <- caret::train(
   trControl = caret::trainControl(method = "none"),
   tuneGrid = data.frame(k = kofKNN),
   metric = "RMSE")
-} else if(method_loc == "lm"){
+} else if(method_loc == "lm"){ #if model is lm
   mod <- caret::train(
     pp, 
     data = trainDF |> drop_na(), 

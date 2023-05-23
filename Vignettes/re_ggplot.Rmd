@@ -15,6 +15,7 @@ This report looks at the dataset airquality from the standard library of R. Data
 A main focus will be the connection between Ozone and temperature and further factors influencing Ozone concentration.
 
 # Initialisation
+
 First, lets do a set up and clean up the messy month and days columns from the standard data set. 
 ```{r, message=FALSE}
 # Package names
@@ -42,13 +43,14 @@ Then we take look at the connection between Ozone and Temperature.
 ```{r}
 ggplot(
   data = airquality,
-  aes(x = Temp, y = replace_na(Ozone,0), color = is.na(Ozone))) +
-  geom_point(size = 0.75) +
+  aes(x = Temp, y = replace_na(Ozone,0), color = is.na(Ozone))) +#Na is set to 0 so that values are plotted
+  geom_point(size = 0.75) + #Adding points
   labs(x = expression('Temperature ('~degree*C*')'), 
        y = expression(paste("Ozone Conentration (ppb)")),
-       color = "Ozone is NA") +
+       color = "Ozone is NA") + #Formating
   theme_classic()
 ```
+
 Na values are plotted as 0 so that their distribution is visible. It appears that more NA values are present at higher temperature data but not extremely high values. Furthermore, there seems to be a correlation between temperature and Ozone.
 
 ## Air Temperature and Ozone Correlation
@@ -57,18 +59,19 @@ To explore the correlation better lets plot a graph with this correlation:
 
 ```{r}
 airquality |>
-  filter(!is.na(Ozone))|>
+  filter(!is.na(Ozone))|> #remove NA
 ggplot(
   aes(x = Temp, y = Ozone)) +
   geom_point(size = 1) +
-  geom_smooth(method = "lm",formula = 'y ~ x',na.rm = T, color = "blue") +
+  geom_smooth(method = "lm",formula = 'y ~ x',na.rm = T, color = "blue") + #make correlation
   labs(x = expression('Temperature ('~degree*C*')'), 
-       y = expression(paste("Ozone Concentration (ppb)"))) +
+       y = expression(paste("Ozone Concentration (ppb)"))) + #Formating
   theme_classic()
 
 
-cor.test(airquality$Ozone, airquality$Temp, alternative = "two.sided",method = "pearson")
+cor.test(airquality$Ozone, airquality$Temp, alternative = "two.sided",method = "pearson")#also do the correlation test
 ```
+
 Visible is the correlation and it appears that the temperature explains Ozone well. The correlation test returns that the correlation is roughly 0.7 and is statistically significant with the method pearson and the two sided correlation test. Though we have eliminated all measurements containing NA as their measurement in Ozone, which might induce a bias.
 
 ## Temperature and Ozone Correlation by Month
@@ -93,6 +96,7 @@ ggplot(
 
 
 ```
+
 The correlation is steeper for peak summer months. But also temperature is higher in peak summer months. This might indicate a non linear correlation as with increasing temperature values for summer months the temperature seems to increase at a higher rate and so non linearly. It might also be due to other meteorological conditions during these months that change.
 
 ## Mapping the Density of Temperature  and Ozone Values
@@ -101,27 +105,25 @@ Just out of curiosity we map the temperature density vs the ozone density
 
 ```{r}
 
-# density raster
 airquality |>
   filter(!is.na(Ozone)) |>
 ggplot(
     aes(x = Temp, y = Ozone)) +
   stat_density_2d(
-    geom = "raster", # the geometric object to display the data
-    aes(fill = after_stat(density)), # using `density`, a variable calculated by the stat
-    contour = FALSE 
-    ) +
+    geom = "raster", 
+    aes(fill = after_stat(density)), # using density
+    contour = FALSE ) +
   scale_fill_viridis_c() +
   labs(x = expression('Temperature ('~degree*C*')'), 
        y = expression(paste("Ozone Concentration (ppb)")),
        color = "Month")+
   theme_classic() + 
-  scale_x_continuous(expand = c(0, 0)) +  # avoid gap between plotting area and axis
+  scale_x_continuous(expand = c(0, 0)) +  # avoid gap
   scale_y_continuous(expand = c(0, 0))
 
 ```
 
-This again confirms our suspicion that the data might not correlate in a linear way since there seems to be almost no increase in Ozone concentration with rising temperatures at the beginning and then they start to increase in what might be a non linear way. Though I am not yet able to plot non linear regressions except thrugh a log transformation of the y axis which is not very attractive. We might learn that later in the course.
+This again confirms our suspicion that the data might not correlate in a linear way since there seems to be almost no increase in Ozone concentration with rising temperatures at the beginning and then they start to increase in what might be a non linear way. Though I am not yet able to plot non linear regressions except thrugh a log transformation of the y axis which is not very attractive. 
 
 ## Statistical Evaluation of Ozone Values
 
@@ -133,8 +135,8 @@ airquality |>
   mutate(month = month(date,label = T))|>
 ggplot(
   aes(x =  month, y = Ozone)) +
-  geom_boxplot(fill = "grey70", outlier.shape = NA) +
-  geom_jitter(width = 0.2, alpha = 0.3) +
+  geom_boxplot(fill = "grey70", outlier.shape = NA) + #boxes
+  geom_jitter(width = 0.2, alpha = 0.3) + #jitter
   scale_x_discrete(name = "Month") +
       scale_y_continuous(name = "Ozone Concentration (ppb)")+
   theme_classic()+
@@ -142,6 +144,7 @@ ggplot(
 
 
 ```
+
 The data is more spread out in the months of July and August. Although there are more outliers in the other months. Overall, the median of the Ozone concentration peaks in July and stays high throughout August.
 
 ## Timeseries Ozone values with Wind Speed
@@ -153,8 +156,8 @@ airquality |>
 ggplot(
     aes(x = date, y = Ozone)) +
   geom_line(data=airquality[!is.na(airquality$Ozone),]) +
-  geom_point(aes(x = date, y = replace_na(Ozone,0) ,color = Wind), size = 0.9) +
-  geom_point(data = filter(airquality[is.na(airquality$Ozone),]), aes(x = date, y = replace_na(Ozone,0)),color = "red4") +
+  geom_point(aes(x = date, y = replace_na(Ozone,0) ,color = Wind), size = 0.9) +#adding normal points, colored for wind speed
+  geom_point(data = filter(airquality[is.na(airquality$Ozone),]), aes(x = date, y = replace_na(Ozone,0)),color = "red4") + #adding NA, not very elegant
   labs(x = expression('Date'), 
        y = expression(paste("Ozone Concentration (ppb)")),
        color = expression(paste('Wind speed ('~m/s *')')))+
@@ -163,5 +166,6 @@ ggplot(
 
 
 ```
+
 NA values are also added for completion, these values are plotted to the value zero. Wind speed is plotted as a color scale. Peak Ozone values seem to be at low Wind speeds which is expected. Also low ozone values are usually at high wind speeds which also makes sense. Again we could do a correlation to further explore this connection.
 Interestingly, most NA values appear to be in the month of June. Again, we could explore this further in a more in depth analysis.

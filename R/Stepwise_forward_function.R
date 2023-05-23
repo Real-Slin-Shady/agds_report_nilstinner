@@ -1,5 +1,8 @@
+# Function definitions -------------------
+
 #Manual stepwise forward regression.
 #Takes a tidy dataframe and a variable to predict and can take some columns of the dataframe that should not be used as predictors.
+#Strictly follows the specified algorithm of the GECO-Group of the university of Bern
 #Returns all models as a list.
 Stepwiseforward_tidy <- function(TidyDF,toPredict,removeColumns = NULL){
   unused_predictors <-

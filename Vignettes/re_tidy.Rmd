@@ -5,7 +5,8 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 # General Information
-This data come from the study of Groenigen et al. 2014, https://doi.org/10.1126/science.1249534.
+This report explores th elog response ratio of various expreiments in a dataset.
+Data used in this report comes from the study of Groenigen et al. 2014, https://doi.org/10.1126/science.1249534.
 It contains soil parameters and will be used to calculate the log response ratio for experiments in various groupings.
 Fist, the excel file was cleaned to be machine readable and then saved as a csv file. The original file can be found in the appendix of the study.
 The Log_response Ratio is defined as: 
@@ -17,6 +18,7 @@ Source: https://github.com/geco-bern/agds
 
 # Setup of Enviroment
 First, let's load the packages and the data.
+
 ```{r, message = FALSE}
 packages <- c("tidyverse")
 source("../R/load_packages.R")
@@ -26,11 +28,12 @@ soil_organic_carbon <- read_csv("../data/1249534s1-s6.csv") #Reading in datafram
 
 
 ```
+
 # Calculating Log-Response Ratios
+
 Now, let's calculate the Response ratio for each experiment:
 
 ```{r}
-
 soil_organic_carbon |>
   #Calculating log response ration for each entry
   mutate(log_response_ratio = log(increased_CO2_mean/ambient_CO2_mean, base = exp(1))) |> 
@@ -39,7 +42,6 @@ soil_organic_carbon |>
   knitr::kable(col.names = c("Experiment","Log_Response_Ratio")) #Make it nice looking
 
 ```
-
 
 
 At last, let's calculate the Response ratio for the various duration of time not grouped by experiment. The log response ratios will be grouped by less than 3 years, between 3 and 6 years including edge cases and then also more than six years.

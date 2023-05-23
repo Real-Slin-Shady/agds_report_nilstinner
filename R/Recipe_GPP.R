@@ -1,6 +1,6 @@
 # Function definitions -------------------
 
-# Creates recipy for bioflux dataset with few parameter options, quite specific function...
+# Creates recipe for bioflux dataset with few parameter options, quite specific function...
 
 recipe_GPP <- function(tidyDF){
   pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
