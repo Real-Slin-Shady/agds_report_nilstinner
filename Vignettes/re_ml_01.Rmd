@@ -120,7 +120,7 @@ print("Model lm")
 
 Not much variation in the residuals over time, residuals were used to show the variations of observed and modeled GPP. 
 If there is a hiatus of data around January of 2008 and a the decrease arround 2011, this is visible in all models with all data.
-Of course, the bias of the lm in the training is 0 (definition of Bias).
+Of course, the bias of the lm in the training is 0 (definition of lm of trainingdata).
 
 #### state a hypothesis for how the R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
 If k = 1, training data will be predicted with 0 error and perfect R2, but the test set performance will be very poor with a low R2 and a high MAE.
