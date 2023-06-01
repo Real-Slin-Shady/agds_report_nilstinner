@@ -2,7 +2,11 @@
 title: "Report Excercise \"ggplot\""
 author: "Nils Tinner"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections : yes
 
 ---
 # General Introduction

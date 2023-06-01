@@ -2,7 +2,12 @@
 title: "Report Machine Learning 1"
 author: "Nils Tinner"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections : yes
+
 ---
 # Introduction
 This report investigates how models behave for the hyperparameter of k in knn. Furthermore a evaluation of the bias and the residuals over time will be performed. 
@@ -80,7 +85,7 @@ source("../R/Evaluate_model_function.R") #This function takes many arguments, th
 
 ```
 
-# #KNN model
+## KNN model
 Now we plot the performance of the KNN model.
 
 ```{R}

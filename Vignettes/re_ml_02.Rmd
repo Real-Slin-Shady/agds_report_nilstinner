@@ -2,7 +2,11 @@
 title: "Report Machine Learning 2"
 author: "Nils Tinner"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections : yes
 ---
 # Introduction
 In this Report, we want to investigate how models perform across site for GPP prediction. Thereby two sites (Davos and Laegern) will be compared. 
