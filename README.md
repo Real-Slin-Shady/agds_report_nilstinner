@@ -33,5 +33,4 @@ Source: ChatGPT 3.5, 17.04.2023
 
 
 Test:
-
-![image](https://drive.google.com/file/d/1JjxgSayrfp0Dtnm2zxI1HkqX5mcTtMZS)
+![image](https://drive.google.com/uc?export=view&id=1JjxgSayrfp0Dtnm2zxI1HkqX5mcTtMZS)
